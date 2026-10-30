@@ -1,57 +1,74 @@
-# Actus
+# Actus — proposta e versão inicial
 
-O Actus é um aplicativo de bem-estar e atividade física que ajuda cada pessoa a criar uma rotina de movimento compatível com seu tempo, espaço e experiência. A plataforma combina treinos personalizados, acompanhamento de progresso e um histórico individual em uma experiência simples para web e dispositivos móveis.
+O Actus é um aplicativo de bem-estar e atividade física que ajuda pessoas a incluir mais movimento na rotina com treinos adaptados ao tempo, ao espaço, aos equipamentos e ao nível de experiência disponíveis.
 
-## Visão do produto
+## 1. Identificação do problema e proposta de solução
 
-O Actus incentiva a constância sem exigir uma rotina perfeita. A pessoa escolhe o grupo muscular, o local, os equipamentos disponíveis, a duração e o nível; o aplicativo monta uma sequência de exercícios para começar.
+O comportamento sedentário, como passar longos períodos sentado ou deitado, é um tema relevante de saúde pública. A falta de tempo, de equipamentos ou de orientação também pode dificultar o início e a continuidade de uma rotina ativa. O [Guia de Atividade Física para a População Brasileira, do Ministério da Saúde](https://www.gov.br/saude/pt-br/assuntos/saude-brasil/eu-quero-me-exercitar/documentos/pdf/guia_atividade_fisica_populacao_brasileira.pdf) recomenda reduzir períodos prolongados sem movimento e incluir pausas ativas ao longo do dia.
 
-## Funcionalidades
+O público do Actus são pessoas que querem começar ou retomar atividades físicas com uma proposta simples e adaptável. A solução é um aplicativo que monta treinos conforme grupo muscular, local, equipamentos disponíveis, duração e nível. O acompanhamento por exercício e o histórico ajudam a pessoa a retomar sua prática e visualizar os treinos concluídos.
 
-- Criação de conta e autenticação por e-mail.
-- Perfil com objetivo pessoal e preferências de aparência.
-- Tema claro ou escuro, com preferência mantida no dispositivo.
-- Geração de treinos conforme disponibilidade e nível.
-- Acompanhamento de exercícios concluídos durante cada sessão.
-- Histórico dos treinos finalizados, associado à conta da pessoa.
-- Conteúdo inicial sobre movimento e redução do tempo sedentário.
+## 2. Definição inicial do sistema
 
-## Tecnologias
+### Funcionalidades do MVP
 
-- **Aplicativo:** Expo SDK 57, React Native e React Native Web.
-- **Navegação:** Expo Router.
-- **Autenticação e dados:** Firebase Authentication e Cloud Firestore.
-- **Persistência local:** AsyncStorage.
+- Cadastro, login e encerramento de sessão por e-mail e senha.
+- Perfil com nome e objetivo pessoal.
+- Montagem de treinos personalizados por preferências e recursos disponíveis.
+- Sessão interativa para marcar exercícios concluídos e acompanhar o progresso.
+- Histórico de treinos finalizados.
+- Preferência de tema claro ou escuro, salva no dispositivo.
+- Tela inicial com incentivo ao movimento e acesso ao início de um treino.
 
-## Organização do projeto
+### Usuários e permissões
+
+| Usuário | Acesso |
+| --- | --- |
+| Visitante | Pode acessar as telas de login e cadastro. As demais rotas exigem autenticação. |
+| Pessoa autenticada | Pode editar o próprio nome e objetivo, criar e consultar seus treinos e registrar o progresso das sessões. |
+
+As regras do Firestore vinculam os documentos ao identificador da pessoa autenticada (`uid`). Cada conta só pode ler e alterar seu próprio perfil e seus próprios treinos. A preferência de tema é armazenada localmente no dispositivo. O MVP não possui painel administrativo.
+
+### Telas e fluxo principal
+
+1. A pessoa cria uma conta ou entra no aplicativo.
+2. A tela inicial apresenta o propósito do Actus e direciona para a montagem do treino.
+3. A pessoa escolhe suas preferências e inicia a sessão proposta.
+4. Durante o treino, marca cada exercício concluído; ao terminar, o treino passa a aparecer no histórico.
+5. Pelo menu, também pode abrir seu perfil ou ajustar as configurações de aparência.
+
+## 3. Estrutura inicial do aplicativo
+
+O projeto usa Expo, React Native e Expo Router, com telas organizadas por rota e componentes reutilizáveis fora da pasta de rotas.
 
 ```text
 src/
-├── app/          # Rotas e telas do aplicativo
-├── components/   # Componentes de interface
-├── context/      # Autenticação e preferências globais
-└── lib/          # Catálogo de exercícios, Firebase e tema
-assets/           # Ícones e recursos visuais
-firestore.rules   # Regras de acesso ao Firestore
+├── app/                  # Rotas e telas
+│   ├── inicio.js         # Página inicial
+│   ├── treino.js         # Montagem de treino
+│   ├── sessao.js         # Execução e progresso
+│   ├── historico.js      # Treinos concluídos
+│   ├── perfil.js         # Dados pessoais e objetivo
+│   └── configuracoes.js  # Preferências de aparência
+├── components/           # Elementos reutilizáveis da interface
+├── context/              # Estado de autenticação e tema
+└── lib/                  # Firebase, tema e catálogo de exercícios
 ```
 
-As rotas principais incluem a página inicial, criação e execução de treinos, histórico, perfil e configurações. Os dados de cada pessoa são organizados no Firestore em `users/{uid}` e `users/{uid}/workouts/{workoutId}`.
+O Firebase Authentication cuida das contas e o Cloud Firestore persiste perfis, treinos e progresso. Os dados são organizados em `users/{uid}` e `users/{uid}/workouts/{workoutId}`. As regras de acesso ficam em `firestore.rules`.
 
-## Configuração do serviço
+## 4. Navegação, versionamento e primeira versão funcional
 
-A integração Firebase recebe a configuração por variáveis `EXPO_PUBLIC_FIREBASE_*`, documentadas em `.env.example`. O Firebase Authentication deve permitir acesso por e-mail e senha, e as regras de `firestore.rules` precisam estar publicadas no projeto associado antes de usar operações remotas.
+A navegação usa o Expo Router. Após autenticação, a pessoa chega à tela **Início**; dali pode iniciar um treino ou acessar o histórico, perfil e configurações pelo menu. O fluxo de treino conecta montagem, sessão e registro de conclusão.
 
-As variáveis públicas identificam o projeto Firebase no cliente. Credenciais administrativas e chaves de conta de serviço não devem ser incluídas no aplicativo.
+O aplicativo está configurado como versão **1.0.0** e organizado para desenvolvimento incremental em Git. A versão inicial do MVP inclui autenticação, montagem e execução de treinos, histórico e personalização do perfil e da aparência.
 
-## Desenvolvimento
+Para habilitar a persistência remota, o ambiente precisa ter as variáveis Firebase indicadas em `.env.example`, e as regras de `firestore.rules` devem estar publicadas no projeto Firebase associado. Credenciais administrativas não devem ser incluídas no aplicativo.
 
-Requisitos: Node.js 22.13 ou superior e dependências do projeto instaladas.
+### Tecnologias
 
-```bash
-npm install
-npm run web       # Aplicação web
-npm start         # Servidor Expo
-npm run lint      # Análise estática
-```
-
-Também estão disponíveis `npm run android` e `npm run ios` para abrir o projeto pelo Expo nos respectivos ambientes.
+- Expo SDK 57 e React Native.
+- Expo Router para navegação.
+- Firebase Authentication e Cloud Firestore.
+- AsyncStorage para preferências locais e persistência de sessão nativa.
+- React Native Web para a versão web.
