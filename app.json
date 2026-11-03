@@ -1,5 +1,7 @@
 {
   "expo": {
+    "scheme": "actus",
+    "plugins": ["expo-router"],
     "name": "Actus",
     "slug": "Actus",
     "version": "1.0.0",
