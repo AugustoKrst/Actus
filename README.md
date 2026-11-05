@@ -54,14 +54,55 @@ src/
 
 ## Arquitetura
 
-A arquitetura prevista para o sistema completo é:
+Conforme a orientação do professor para este projeto, o backend desta entrega permanece no Firebase. O aplicativo Expo/React Native usa o Firebase Authentication para cadastro e login e o Cloud Firestore para persistir perfis, treinos e progresso. Não há API Express nem banco MySQL neste escopo.
 
-- Aplicativo cliente em Expo e React Native.
-- API em Node.js com Express para autenticação, autorização e regras de negócio.
-- MySQL para persistir usuários, papéis, exercícios, treinos e progresso.
-- Tokens JWT para autenticar chamadas à API; a API valida os papéis de usuário e administrador.
+```text
+Aplicativo Expo / React Native
+        ├── Firebase Authentication: cadastro, login e sessão
+        └── Firebase SDK → Cloud Firestore: perfil e treinos
+                            └── firestore.rules: autenticação, propriedade e validação
+```
 
-O código navegável desta entrega é um protótipo funcional que ainda usa Firebase Authentication e Cloud Firestore para login e persistência. Essa integração é provisória e precisa ser substituída pela API Node.js/Express e pelo MySQL nas próximas etapas. O repositório ainda não contém a API, o banco MySQL, JWT nem as permissões administrativas; esses itens não são apresentados como funcionalidades já concluídas.
+O acesso ao Firestore é feito diretamente pelo SDK oficial do Firebase, não por `fetch()` nem por uma API REST própria. As regras do Firestore são a barreira de autorização dos dados: cada pessoa autenticada só pode ler e alterar o próprio perfil e seus próprios treinos.
+
+### Requisitos funcionais atualizados
+
+- Criar conta, entrar e sair usando e-mail e senha.
+- Criar treinos a partir das preferências de grupo muscular, local, equipamentos, duração e nível.
+- Consultar o próprio treino e o histórico de treinos concluídos.
+- Atualizar o progresso de um treino, marcando exercícios concluídos.
+- Excluir um treino do próprio histórico.
+- Consultar e atualizar o próprio perfil.
+- Impedir acesso de visitantes às áreas autenticadas e impedir que uma conta acesse dados de outra.
+
+### Modelo de dados do Cloud Firestore
+
+| Caminho | Campos principais | Uso |
+| --- | --- | --- |
+| `users/{uid}` | `name: string`, `email: string`, `goal: string`, `createdAt: timestamp`, `updatedAt?: timestamp` | Perfil do usuário autenticado. O ID do documento é o UID do Firebase Authentication. |
+| `users/{uid}/workouts/{workoutId}` | `title: string`, `muscle: string`, `place: string`, `equipment: string[]`, `duration: number`, `level: string`, `exercises: object[]`, `completedExerciseIds: string[]`, `completedAt: timestamp \| null`, `createdAt: timestamp` | Treino criado e progresso individual. Cada exercício contém `id`, `name`, `sets`, `reps`, `rest_seconds` e `instructions`. |
+
+O catálogo usado para montar os treinos é estático em `src/lib/exercises.js`; os documentos de treino guardam uma cópia dos exercícios escolhidos para preservar o conteúdo daquela sessão.
+
+### Operações de dados e fluxo
+
+| Operação | Caminho no Firestore | Implementação |
+| --- | --- | --- |
+| Criar treino | `users/{uid}/workouts` | `addDoc()` em `generateAndSaveWorkout()` após escolher as preferências. |
+| Consultar treino | `users/{uid}/workouts/{workoutId}` | `getDoc()` em `getSavedWorkout()` para abrir a sessão. |
+| Listar histórico | `users/{uid}/workouts` | `getDocs()` em `listCompletedWorkouts()`, filtrando treinos concluídos. |
+| Atualizar progresso | `users/{uid}/workouts/{workoutId}` | `updateDoc()` em `saveWorkoutProgress()` ao marcar ou desmarcar exercícios. |
+| Excluir treino | `users/{uid}/workouts/{workoutId}` | `deleteDoc()` em `deleteSavedWorkout()`, disponível no histórico com confirmação na tela. |
+
+O fluxo principal é **Início → Treino → Sessão → Histórico**. A sessão lê o treino, atualiza o progresso no Firestore e o histórico lista os treinos concluídos. As regras correspondentes estão versionadas em `firestore.rules`; elas precisam estar publicadas no projeto Firebase configurado para que as operações funcionem.
+
+### Níveis e permissões previstos
+
+Visitantes podem abrir somente cadastro e login. Usuários autenticados podem acessar e alterar o próprio perfil, criar treinos, atualizar o próprio progresso e excluir os próprios treinos. O perfil administrador continua planejado para uma etapa posterior e ainda não existe no protótipo. As regras atuais não concedem permissões administrativas.
+
+### Escopo desta entrega
+
+Esta entrega registra a modelagem documental do Firestore e integra as operações de criar, consultar, atualizar e excluir treinos no aplicativo. Por autorização do professor, Firebase é a tecnologia de backend e persistência adotada no lugar de Express/MySQL; portanto, não são usados `fetch()`, endpoints próprios ou tabelas SQL. JWT próprio, hash de senha gerenciado pela aplicação, papel administrador e permissões administrativas continuam fora do escopo desta etapa.
 
 ## Executar o aplicativo
 
@@ -72,15 +113,15 @@ npm install
 npx expo start
 ```
 
-Para habilitar login e persistência no protótipo, configure as variáveis Firebase listadas em `.env.example` em um arquivo `.env` local. Sem essa configuração, o aplicativo apresenta a tela de configuração do Firebase. As regras do protótipo estão em `firestore.rules`.
+Para habilitar login e persistência, configure as variáveis Firebase listadas em `.env.example` em um arquivo `.env` local. Sem essa configuração, o aplicativo apresenta a tela de configuração do Firebase. Publique as regras de `firestore.rules` no projeto Firebase antes de usar as operações protegidas.
 
 ## Tecnologias do protótipo
 
 - Expo SDK 57, React Native e React Native Web.
 - Expo Router para navegação.
-- Firebase Authentication e Cloud Firestore como integração temporária.
+- Firebase Authentication e Cloud Firestore como backend desta entrega.
 - AsyncStorage para salvar a preferência de tema e persistência nativa da sessão.
 
 ## Versão
 
-O aplicativo está configurado como versão **1.0.0**. A Entrega 1 contém organização inicial, múltiplas telas e navegação funcional. A migração para a arquitetura Node.js/Express e MySQL e a implementação dos papéis distintos permanecem como próximos passos.
+O aplicativo está configurado como versão **1.0.0**. A Entrega 1 estabeleceu a proposta, telas e navegação. Nesta etapa, o app persiste perfis e treinos no Firebase; as próximas etapas podem ampliar autenticação, papéis de usuário e permissões conforme o escopo acordado com o professor.

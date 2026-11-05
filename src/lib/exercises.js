@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
 const catalog = [
@@ -90,4 +90,8 @@ export async function listCompletedWorkouts(uid) {
 export async function saveWorkoutProgress(uid, workoutId, completedExerciseIds, exerciseCount) {
   const completedAt = completedExerciseIds.length === exerciseCount ? serverTimestamp() : null;
   await updateDoc(doc(db, 'users', uid, 'workouts', workoutId), { completedExerciseIds, completedAt });
+}
+
+export async function deleteSavedWorkout(uid, workoutId) {
+  await deleteDoc(doc(db, 'users', uid, 'workouts', workoutId));
 }
