@@ -1,7 +1,7 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, documentId, getDoc, getDocs, limit, orderBy, query, serverTimestamp, startAfter, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
-const catalog = [
+export const defaultExercises = [
   ['Flexão de braço', 'chest', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '8–12', 60, 'Mantenha o corpo alinhado e desça com controle.'],
   ['Flexão inclinada', 'chest', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '10–15', 45, 'Use uma superfície firme e estável para apoiar as mãos.'],
   ['Supino com halteres', 'chest', ['dumbbells'], ['home', 'gym'], 2, '8–12', 75, 'Escolha pesos confortáveis e mantenha os punhos alinhados.'],
@@ -35,7 +35,9 @@ export async function generateAndSaveWorkout({ uid, muscle, place, equipment, du
   const placeKey = placeMap[place];
   if (!uid || !selectedMuscles || !placeKey || !equipment?.length || !levelMap[level]) throw new Error('Confira as opções do treino e tente novamente.');
 
-  const matches = catalog.filter((exercise) => selectedMuscles.includes(exercise.muscle) && exercise.level <= levelMap[level] && exercise.places.includes(placeKey) && exercise.equipment.some((item) => equipment.includes(({ bodyweight: 'Peso corporal', dumbbells: 'Halteres', bands: 'Elástico', barbell: 'Barra', machines: 'Máquinas' })[item])));
+  const remote = await listExercises();
+  const available = remote.length ? remote : defaultExercises;
+  const matches = available.filter((exercise) => selectedMuscles.includes(exercise.muscle) && exercise.level <= levelMap[level] && exercise.places.includes(placeKey) && exercise.equipment.some((item) => equipment.includes(({ bodyweight: 'Peso corporal', dumbbells: 'Halteres', bands: 'Elástico', barbell: 'Barra', machines: 'Máquinas' })[item])));
   if (!matches.length) throw new Error('Ainda não temos exercícios para essa combinação. Tente outro equipamento ou local.');
 
   const count = Math.min(matches.length, Math.max(4, Math.floor(Number(duration) / 6)));
@@ -59,7 +61,7 @@ export async function generateAndSaveWorkout({ uid, muscle, place, equipment, du
 
   let saved;
   try {
-    saved = await addDoc(collection(db, 'users', uid, 'workouts'), { ...workout, completedExerciseIds: [], completedAt: null, createdAt: serverTimestamp() });
+    saved = await addDoc(collection(db, 'users', uid, 'workouts'), { ...workout, completedExerciseIds: [], completedSetIds: [], completedAt: null, createdAt: serverTimestamp() });
   } catch (error) {
     if (error.code === 'permission-denied') {
       throw new Error('O Firebase recusou salvar este treino. Verifique se as regras de segurança de firestore.rules foram publicadas no projeto configurado.');
@@ -87,11 +89,68 @@ export async function listCompletedWorkouts(uid) {
     });
 }
 
-export async function saveWorkoutProgress(uid, workoutId, completedExerciseIds, exerciseCount) {
-  const completedAt = completedExerciseIds.length === exerciseCount ? serverTimestamp() : null;
-  await updateDoc(doc(db, 'users', uid, 'workouts', workoutId), { completedExerciseIds, completedAt });
+export function getExerciseSetCount(exercise) {
+  return Math.max(1, Number(exercise?.sets) || 1);
+}
+
+export function getWorkoutSetIds(exercises = []) {
+  return exercises.flatMap((exercise) => Array.from(
+    { length: getExerciseSetCount(exercise) },
+    (_, index) => `${exercise.id}-set-${index + 1}`,
+  ));
+}
+
+export function getCompletedSetIds(workout) {
+  if (Array.isArray(workout.completedSetIds)) return workout.completedSetIds;
+  // Treinos anteriores marcavam exercícios inteiros; trate-os como séries concluídas.
+  return (workout.completedExerciseIds || []).flatMap((exerciseId) => {
+    const exercise = workout.exercises?.find((item) => item.id === exerciseId);
+    return exercise ? getWorkoutSetIds([exercise]) : [];
+  });
+}
+
+export async function saveWorkoutProgress(uid, workoutId, completedSetIds, exercises) {
+  const completedExerciseIds = exercises
+    .filter((exercise) => Array.from(
+      { length: getExerciseSetCount(exercise) },
+      (_, index) => `${exercise.id}-set-${index + 1}`,
+    ).every((setId) => completedSetIds.includes(setId)))
+    .map((exercise) => exercise.id);
+  const totalSets = getWorkoutSetIds(exercises).length;
+  const completedAt = totalSets > 0 && completedSetIds.length === totalSets ? serverTimestamp() : null;
+  await updateDoc(doc(db, 'users', uid, 'workouts', workoutId), { completedExerciseIds, completedSetIds, completedAt });
 }
 
 export async function deleteSavedWorkout(uid, workoutId) {
   await deleteDoc(doc(db, 'users', uid, 'workouts', workoutId));
+}
+
+export async function listExercises() {
+  const snapshot = await getDocs(collection(db, 'exercises'));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+export async function saveExercise(exercise, exerciseId) {
+  const data = { ...exercise, level: Number(exercise.level), rest_seconds: Number(exercise.rest_seconds) || 60, updatedAt: serverTimestamp() };
+  delete data.id;
+  if (exerciseId) await updateDoc(doc(db, 'exercises', exerciseId), data);
+  else await addDoc(collection(db, 'exercises'), { ...data, createdAt: serverTimestamp() });
+}
+
+export async function deleteExercise(exerciseId) {
+  await deleteDoc(doc(db, 'exercises', exerciseId));
+}
+
+const ACCOUNT_PAGE_SIZE = 50;
+
+export async function listRegisteredUsers(cursor = null) {
+  const constraints = [orderBy(documentId())];
+  if (cursor) constraints.push(startAfter(cursor));
+  constraints.push(limit(ACCOUNT_PAGE_SIZE));
+  const snapshot = await getDocs(query(collection(db, 'users'), ...constraints));
+  return {
+    users: snapshot.docs.map((userDoc) => ({ id: userDoc.id, ...userDoc.data() })),
+    cursor: snapshot.docs[snapshot.docs.length - 1] || null,
+    hasMore: snapshot.size === ACCOUNT_PAGE_SIZE,
+  };
 }

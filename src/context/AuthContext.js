@@ -5,6 +5,7 @@ import { auth } from '../lib/firebase';
 import { db } from '../lib/firebaseConfig';
 
 const AuthContext = createContext(null);
+const ADMIN_EMAIL = 'augusto@gmail.com';
 
 function authError(error) {
   const messages = {
@@ -19,6 +20,8 @@ function authError(error) {
   return new Error(messages[error.code] || 'Não foi possível concluir. Confira a conexão e tente novamente.');
 }
 
+function userRole(email) { return email?.trim().toLowerCase() === ADMIN_EMAIL ? 'admin' : 'user'; }
+
 async function readUser(firebaseUser) {
   const snapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
   const profile = snapshot.exists() ? snapshot.data() : {};
@@ -27,6 +30,7 @@ async function readUser(firebaseUser) {
     name: profile.name || firebaseUser.displayName || '',
     email: firebaseUser.email || '',
     goal: profile.goal || 'Criar uma rotina',
+    role: userRole(firebaseUser.email),
   };
 }
 
@@ -47,7 +51,7 @@ export function AuthProvider({ children }) {
         const user = await readUser(firebaseUser);
         if (activeUid === firebaseUser.uid) setSession({ user });
       } catch {
-        if (activeUid === firebaseUser.uid) setSession({ user: { uid: firebaseUser.uid, name: firebaseUser.displayName || '', email: firebaseUser.email || '', goal: 'Criar uma rotina' } });
+        if (activeUid === firebaseUser.uid) setSession({ user: { uid: firebaseUser.uid, name: firebaseUser.displayName || '', email: firebaseUser.email || '', goal: 'Criar uma rotina', role: userRole(firebaseUser.email) } });
       } finally {
         setReady(true);
       }
@@ -58,7 +62,7 @@ export function AuthProvider({ children }) {
     try {
       const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(credential.user, { displayName: name.trim() });
-      const user = { uid: credential.user.uid, name: name.trim(), email: credential.user.email, goal: 'Criar uma rotina' };
+      const user = { uid: credential.user.uid, name: name.trim(), email: credential.user.email, goal: 'Criar uma rotina', role: userRole(credential.user.email) };
       await setDoc(doc(db, 'users', user.uid), { name: user.name, email: user.email, goal: user.goal, createdAt: serverTimestamp() });
       setSession({ user });
       return user;

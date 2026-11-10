@@ -30,7 +30,7 @@ O sistema terá visitantes e dois níveis distintos de usuários autenticados:
 | Usuário | Consultar e editar o próprio perfil; criar treinos; registrar o progresso e consultar apenas o próprio histórico. |
 | Administrador | Gerenciar catálogo de exercícios e contas de usuário. Não tem acesso automático aos dados pessoais ou ao histórico privado dos usuários. |
 
-As permissões de administrador fazem parte do planejamento e ainda não estão implementadas no protótipo. No sistema completo, a API deverá validar o papel associado à conta em cada operação protegida; a interface do aplicativo não será a única barreira de autorização.
+O painel administrativo está disponível para `augustokirst@gmail.com`. Essa conta pode gerenciar o catálogo de exercícios; as regras do Firestore aplicam a permissão no backend. O administrador não recebe acesso automático aos treinos privados de outras contas.
 
 ## Fluxo e telas
 
@@ -74,6 +74,7 @@ O acesso ao Firestore é feito diretamente pelo SDK oficial do Firebase, não po
 - Excluir um treino do próprio histórico.
 - Consultar e atualizar o próprio perfil.
 - Impedir acesso de visitantes às áreas autenticadas e impedir que uma conta acesse dados de outra.
+- Permitir que `augustokirst@gmail.com` mantenha o catálogo de exercícios, com autorização validada pelas regras do Firestore.
 
 ### Modelo de dados do Cloud Firestore
 
@@ -98,11 +99,11 @@ O fluxo principal é **Início → Treino → Sessão → Histórico**. A sessã
 
 ### Níveis e permissões previstos
 
-Visitantes podem abrir somente cadastro e login. Usuários autenticados podem acessar e alterar o próprio perfil, criar treinos, atualizar o próprio progresso e excluir os próprios treinos. O perfil administrador continua planejado para uma etapa posterior e ainda não existe no protótipo. As regras atuais não concedem permissões administrativas.
+Visitantes podem abrir somente cadastro e login. Usuários autenticados podem acessar e alterar o próprio perfil, criar treinos, atualizar o próprio progresso e excluir os próprios treinos. A conta `augustokirst@gmail.com` recebe o papel de administrador na interface, e as regras do Firestore autorizam essa conta a manter o catálogo de exercícios. O papel não concede acesso aos treinos privados de outros usuários.
 
 ### Escopo desta entrega
 
-Esta entrega registra a modelagem documental do Firestore e integra as operações de criar, consultar, atualizar e excluir treinos no aplicativo. Por autorização do professor, Firebase é a tecnologia de backend e persistência adotada no lugar de Express/MySQL; portanto, não são usados `fetch()`, endpoints próprios ou tabelas SQL. JWT próprio, hash de senha gerenciado pela aplicação, papel administrador e permissões administrativas continuam fora do escopo desta etapa.
+Esta entrega mantém a autorização do professor para usar Firebase no lugar de Express/MySQL. O Firebase Authentication gerencia o hash da senha e emite tokens de identidade JWT; o SDK mantém a sessão e envia as credenciais ao Firestore. As regras do Firestore protegem os dados e autorizam as alterações no catálogo administrativo. Não há servidor Express nem JWT próprio nesta arquitetura.
 
 ## Executar o aplicativo
 

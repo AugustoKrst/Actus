@@ -59,7 +59,7 @@ export default function AppShell({ children }) {
             <View style={s.accountCopy}><Text style={s.accountName}>{session?.user?.name || 'Minha conta'}</Text><Text style={s.accountEmail}>{session?.user?.email || 'Perfil pessoal'}</Text></View>
           </View>
           <View style={s.menuDivider} />
-          {links.map((item) => {
+          {[...links, ...(session?.user?.role === 'admin' ? [{ path: '/admin', label: 'Administração', icon: '◆' }] : [])].map((item) => {
             const active = isActive(item.path);
             return <Pressable key={item.path} onPress={() => navigate(item.path)} style={[s.menuItem, active && s.menuItemActive]} accessibilityRole="button">
               <Text style={[s.menuItemIcon, active && s.menuItemIconActive]}>{item.icon}</Text><Text style={[s.menuItemText, active && s.menuItemTextActive]}>{item.label}</Text>
