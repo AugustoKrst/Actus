@@ -20,18 +20,34 @@ function authError(error) {
   return new Error(messages[error.code] || 'Não foi possível concluir. Confira a conexão e tente novamente.');
 }
 
-function userRole(email) { return email?.trim().toLowerCase() === ADMIN_EMAIL ? 'admin' : 'user'; }
+function userRole(email, accountType) {
+  if (email?.trim().toLowerCase() === ADMIN_EMAIL) return 'admin';
+  return accountType === 'health_professional' ? 'health_professional' : 'user';
+}
 
 async function readUser(firebaseUser) {
   const snapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
   const profile = snapshot.exists() ? snapshot.data() : {};
+  const accountType = profile.accountType === 'health_professional' ? 'health_professional' : 'user';
+  if (accountType === 'health_professional') {
+    try { await syncProfessionalDirectory(firebaseUser, profile.name || firebaseUser.displayName || 'Profissional'); } catch { /* Keep the account usable if directory sync is temporarily unavailable. */ }
+  }
   return {
     uid: firebaseUser.uid,
     name: profile.name || firebaseUser.displayName || '',
     email: firebaseUser.email || '',
     goal: profile.goal || 'Criar uma rotina',
-    role: userRole(firebaseUser.email),
+    accountType,
+    role: userRole(firebaseUser.email, profile.accountType),
   };
+}
+
+async function syncProfessionalDirectory(firebaseUser, name) {
+  await setDoc(doc(db, 'professionals', firebaseUser.uid), {
+    name,
+    accountType: 'health_professional',
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export function AuthProvider({ children }) {
@@ -51,19 +67,23 @@ export function AuthProvider({ children }) {
         const user = await readUser(firebaseUser);
         if (activeUid === firebaseUser.uid) setSession({ user });
       } catch {
-        if (activeUid === firebaseUser.uid) setSession({ user: { uid: firebaseUser.uid, name: firebaseUser.displayName || '', email: firebaseUser.email || '', goal: 'Criar uma rotina', role: userRole(firebaseUser.email) } });
+        if (activeUid === firebaseUser.uid) setSession({ user: { uid: firebaseUser.uid, name: firebaseUser.displayName || '', email: firebaseUser.email || '', goal: 'Criar uma rotina', accountType: 'user', role: userRole(firebaseUser.email) } });
       } finally {
         setReady(true);
       }
     });
   }, []);
 
-  async function register({ name, email, password }) {
+  async function register({ name, email, password, accountType }) {
     try {
       const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(credential.user, { displayName: name.trim() });
-      const user = { uid: credential.user.uid, name: name.trim(), email: credential.user.email, goal: 'Criar uma rotina', role: userRole(credential.user.email) };
-      await setDoc(doc(db, 'users', user.uid), { name: user.name, email: user.email, goal: user.goal, createdAt: serverTimestamp() });
+      const selectedAccountType = accountType === 'health_professional' ? 'health_professional' : 'user';
+      const user = { uid: credential.user.uid, name: name.trim(), email: credential.user.email, goal: 'Criar uma rotina', accountType: selectedAccountType, role: userRole(credential.user.email, selectedAccountType) };
+      await setDoc(doc(db, 'users', user.uid), { name: user.name, email: user.email, goal: user.goal, accountType: selectedAccountType, createdAt: serverTimestamp() });
+      if (selectedAccountType === 'health_professional') {
+        try { await syncProfessionalDirectory(credential.user, user.name); } catch { /* The next sign-in will retry the directory sync. */ }
+      }
       setSession({ user });
       return user;
     } catch (error) { throw authError(error); }
@@ -84,6 +104,9 @@ export function AuthProvider({ children }) {
       const user = { ...session.user, ...changes };
       await updateDoc(doc(db, 'users', user.uid), { name: user.name.trim(), goal: user.goal, updatedAt: serverTimestamp() });
       await updateProfile(auth.currentUser, { displayName: user.name.trim() });
+      if (user.accountType === 'health_professional') {
+        try { await syncProfessionalDirectory(auth.currentUser, user.name.trim()); } catch { /* The next sign-in will retry the directory sync. */ }
+      }
       setSession({ user: { ...user, name: user.name.trim() } });
     } catch (error) { throw authError(error); }
   }

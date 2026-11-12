@@ -15,21 +15,74 @@ service cloud.firestore {
       return goal in ['Ganhar força', 'Ter mais disposição', 'Criar uma rotina', 'Melhorar mobilidade'];
     }
 
+    function validAccountType(accountType) {
+      return accountType in ['user', 'health_professional'];
+    }
+
+    function conversationParticipant(conversationId) {
+      let conversation = get(/databases/$(database)/documents/conversations/$(conversationId)).data;
+      return request.auth != null
+        && (conversation.studentId == request.auth.uid || conversation.professionalId == request.auth.uid);
+    }
+
+    match /professionals/{professionalId} {
+      allow read: if request.auth != null;
+      allow create, update: if owns(professionalId)
+        && get(/databases/$(database)/documents/users/$(professionalId)).data.accountType == 'health_professional'
+        && request.resource.data.keys().hasOnly(['name', 'accountType', 'updatedAt'])
+        && request.resource.data.name == get(/databases/$(database)/documents/users/$(professionalId)).data.name
+        && request.resource.data.accountType == 'health_professional';
+      allow delete: if false;
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if request.auth != null
+        && (resource.data.studentId == request.auth.uid || resource.data.professionalId == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['studentId', 'studentName', 'professionalId', 'professionalName', 'createdAt'])
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.professionalId is string
+        && conversationId == request.auth.uid + '_' + request.resource.data.professionalId
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'user'
+        && request.resource.data.studentName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+        && request.resource.data.professionalName == get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalId)).data.name
+        && get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalId)).data.accountType == 'health_professional'
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if conversationParticipant(conversationId);
+        allow create: if conversationParticipant(conversationId)
+          && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt'])
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.senderName == (request.auth.uid == get(/databases/$(database)/documents/conversations/$(conversationId)).data.studentId
+            ? get(/databases/$(database)/documents/conversations/$(conversationId)).data.studentName
+            : get(/databases/$(database)/documents/conversations/$(conversationId)).data.professionalName)
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
     match /users/{userId} {
       allow read: if owns(userId) || isAdmin();
       allow create: if owns(userId)
-        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'accountType', 'createdAt'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 80
         && request.resource.data.email == request.auth.token.email
-        && validGoal(request.resource.data.goal);
+        && validGoal(request.resource.data.goal)
+        && validAccountType(request.resource.data.accountType);
       allow update: if owns(userId)
-        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'accountType', 'createdAt', 'updatedAt'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 80
         && request.resource.data.email == resource.data.email
+        && (!('accountType' in resource.data) || request.resource.data.accountType == resource.data.accountType)
         && validGoal(request.resource.data.goal);
       allow delete: if false;
 
