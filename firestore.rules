@@ -19,6 +19,32 @@ service cloud.firestore {
       return accountType in ['user', 'health_professional'];
     }
 
+    function canStartConversation(studentId, studentName) {
+      let profile = get(/databases/$(database)/documents/users/$(studentId)).data;
+      return profile != null
+        && (!('accountType' in profile) || profile.accountType == 'user')
+        && (!('name' in profile)
+          || !(profile.name is string)
+          || profile.name.size() == 0
+          || profile.name == studentName);
+    }
+
+    function validAssignedWorkout(workout) {
+      return workout is map
+        && workout.keys().hasOnly(['title', 'duration', 'level', 'muscle', 'place', 'equipment', 'exercises'])
+        && workout.title is string
+        && workout.title.size() >= 1
+        && workout.title.size() <= 60
+        && workout.duration in [20, 30, 45, 60]
+        && workout.level in ['Iniciante', 'Intermediário', 'Avançado']
+        && workout.muscle is string
+        && workout.place is string
+        && workout.equipment is list
+        && workout.exercises is list
+        && workout.exercises.size() > 0
+        && workout.exercises.size() <= 20;
+    }
+
     function conversationParticipant(conversationId) {
       let conversation = get(/databases/$(database)/documents/conversations/$(conversationId)).data;
       return request.auth != null
@@ -43,8 +69,10 @@ service cloud.firestore {
         && request.resource.data.studentId == request.auth.uid
         && request.resource.data.professionalId is string
         && conversationId == request.auth.uid + '_' + request.resource.data.professionalId
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'user'
-        && request.resource.data.studentName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+        && request.resource.data.studentName is string
+        && request.resource.data.studentName.size() >= 1
+        && request.resource.data.studentName.size() <= 80
+        && canStartConversation(request.auth.uid, request.resource.data.studentName)
         && request.resource.data.professionalName == get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalId)).data.name
         && get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalId)).data.accountType == 'health_professional'
         && request.resource.data.createdAt == request.time;
@@ -53,7 +81,7 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if conversationParticipant(conversationId);
         allow create: if conversationParticipant(conversationId)
-          && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt'])
+          && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'workout', 'createdAt'])
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.senderName == (request.auth.uid == get(/databases/$(database)/documents/conversations/$(conversationId)).data.studentId
             ? get(/databases/$(database)/documents/conversations/$(conversationId)).data.studentName
@@ -61,6 +89,9 @@ service cloud.firestore {
           && request.resource.data.text is string
           && request.resource.data.text.size() >= 1
           && request.resource.data.text.size() <= 2000
+          && (!('workout' in request.resource.data)
+            || (request.auth.uid == get(/databases/$(database)/documents/conversations/$(conversationId)).data.professionalId
+              && validAssignedWorkout(request.resource.data.workout)))
           && request.resource.data.createdAt == request.time;
         allow update, delete: if false;
       }
@@ -109,6 +140,59 @@ service cloud.firestore {
           && request.resource.data.completedSetIds is list
           && request.resource.data.completedSetIds.size() <= 100
           && (request.resource.data.completedAt == null || request.resource.data.completedAt is timestamp);
+        allow delete: if owns(userId);
+      }
+
+      match /customWorkouts/{workoutId} {
+        allow read: if owns(userId);
+        allow create: if owns(userId)
+          && request.resource.data.keys().hasOnly(['title', 'muscle', 'level', 'duration', 'place', 'equipment', 'exercises', 'createdAt', 'updatedAt'])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 60
+          && request.resource.data.muscle is string
+          && request.resource.data.level in ['Iniciante', 'Intermediário', 'Avançado']
+          && request.resource.data.duration in [20, 30, 45, 60]
+          && request.resource.data.place is string
+          && request.resource.data.equipment is list
+          && request.resource.data.exercises is list
+          && request.resource.data.exercises.size() > 0
+          && request.resource.data.exercises.size() <= 20
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+        allow update: if owns(userId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'muscle', 'level', 'duration', 'place', 'equipment', 'exercises', 'updatedAt'])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 60
+          && request.resource.data.muscle is string
+          && request.resource.data.level in ['Iniciante', 'Intermediário', 'Avançado']
+          && request.resource.data.duration in [20, 30, 45, 60]
+          && request.resource.data.place is string
+          && request.resource.data.equipment is list
+          && request.resource.data.exercises is list
+          && request.resource.data.exercises.size() > 0
+          && request.resource.data.exercises.size() <= 20
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if owns(userId);
+      }
+
+      match /trainingSchedules/{scheduleId} {
+        allow read: if owns(userId);
+        allow create, update: if owns(userId)
+          && scheduleId == 'weekly'
+          && request.resource.data.keys().hasOnly(['days', 'updatedAt'])
+          && request.resource.data.days is map
+          && request.resource.data.days.keys().hasOnly(['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'])
+          && request.resource.data.days.keys().hasAll(['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'])
+          && request.resource.data.days.segunda is list && request.resource.data.days.segunda.size() <= 1
+          && request.resource.data.days.terca is list && request.resource.data.days.terca.size() <= 1
+          && request.resource.data.days.quarta is list && request.resource.data.days.quarta.size() <= 1
+          && request.resource.data.days.quinta is list && request.resource.data.days.quinta.size() <= 1
+          && request.resource.data.days.sexta is list && request.resource.data.days.sexta.size() <= 1
+          && request.resource.data.days.sabado is list && request.resource.data.days.sabado.size() <= 1
+          && request.resource.data.days.domingo is list && request.resource.data.days.domingo.size() <= 1
+          && request.resource.data.updatedAt == request.time;
         allow delete: if owns(userId);
       }
     }

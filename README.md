@@ -1,128 +1,147 @@
 # Actus
 
-O Actus é um aplicativo de bem-estar e atividade física que ajuda pessoas a incluir mais movimento na rotina com treinos adaptados ao tempo, ao espaço, aos equipamentos e ao nível de experiência disponíveis.
+Aplicativo mobile de bem-estar e atividade física. O Actus ajuda pessoas a começar ou retomar uma rotina ativa com treinos adaptados ao tempo disponível, ao local, aos equipamentos e ao nível de experiência.
 
-## Problema e proposta
+## Problema e solução
 
-O comportamento sedentário, como passar longos períodos sentado ou deitado, é um tema relevante de saúde pública. A falta de tempo, de equipamentos ou de orientação também pode dificultar o início e a continuidade de uma rotina ativa. O [Guia de Atividade Física para a População Brasileira, do Ministério da Saúde](https://www.gov.br/saude/pt-br/assuntos/saude-brasil/eu-quero-me-exercitar/documentos/pdf/guia_atividade_fisica_populacao_brasileira.pdf) recomenda reduzir períodos prolongados sem movimento e incluir pausas ativas ao longo do dia.
+A falta de tempo, equipamento ou orientação pode dificultar a prática regular de atividade física. O Actus organiza treinos simples e adaptáveis e permite acompanhar o progresso e consultar sessões concluídas.
 
-O público do Actus são pessoas que querem começar ou retomar atividades físicas com uma proposta simples e adaptável. O aplicativo permite montar treinos conforme grupo muscular, local, equipamentos disponíveis, duração e nível. A sessão interativa e o histórico ajudam a acompanhar os exercícios e visualizar os treinos concluídos.
+## Funcionalidades
 
-## Escopo e funcionalidades
-
-O protótipo navegável inclui:
-
-- Cadastro, login e encerramento de sessão por e-mail e senha.
-- Início com apresentação da proposta e acesso ao fluxo de treino.
-- Montagem de treinos por grupo muscular, local, equipamentos, duração e nível.
-- Sessão para marcar exercícios concluídos e acompanhar o progresso.
-- Histórico de treinos finalizados.
+- Cadastro, login e logout com e-mail e senha.
+- Perfis de usuário, profissional de saúde e administrador.
+- Criação de treino por grupo muscular, local, equipamentos, duração e nível.
+- Sessão de treino com marcação de séries concluídas e salvamento do progresso.
+- Histórico de treinos concluídos e exclusão de um treino do histórico.
 - Perfil com nome e objetivo pessoal.
-- Tema claro ou escuro, salvo no dispositivo.
+- Catálogo de exercícios administrado pela conta designada.
+- Conversas entre usuários e profissionais de saúde.
+- Preferência de tema salva no dispositivo.
 
-### Perfis e permissões previstos
+## Navegação
 
-O sistema terá visitantes e dois níveis distintos de usuários autenticados:
+O projeto usa Expo Router. As rotas estão em `src/app/`:
 
-| Perfil | Permissões previstas |
+| Rota | Função |
 | --- | --- |
-| Visitante | Acessar cadastro e login. As demais áreas exigem autenticação. |
-| Usuário | Consultar e editar o próprio perfil; criar treinos; registrar o progresso e consultar apenas o próprio histórico. |
-| Administrador | Gerenciar catálogo de exercícios e contas de usuário. Não tem acesso automático aos dados pessoais ou ao histórico privado dos usuários. |
+| `login.js` | Cadastro e autenticação. |
+| `inicio.js` | Entrada e apresentação do aplicativo. |
+| `treino.js` | Preferências e criação de treino. |
+| `sessao.js` | Execução e progresso das séries. |
+| `historico.js` | Treinos concluídos e exclusão. |
+| `perfil.js` | Dados pessoais e objetivo. |
+| `configuracoes.js` | Preferências do aplicativo. |
+| `admin.js` | Administração de exercícios e contas. |
+| `atendimentos.js`, `contato.js` | Diretório e comunicação com profissionais. |
 
-O painel administrativo está disponível para `augustokirst@gmail.com`. Essa conta pode gerenciar o catálogo de exercícios; as regras do Firestore aplicam a permissão no backend. O administrador não recebe acesso automático aos treinos privados de outras contas.
+Visitantes ficam restritos ao login/cadastro. Usuários autenticados acessam os próprios dados. Profissionais mantêm um perfil público no diretório e participam de conversas com usuários. O administrador pode gerenciar o catálogo e consultar contas, mas não recebe acesso aos treinos privados de outras pessoas.
 
-## Fluxo e telas
+## Arquitetura e decisão sobre o backend
 
-1. A pessoa cria uma conta ou entra no aplicativo.
-2. A tela **Início** apresenta o propósito do Actus.
-3. Em **Treino**, escolhe preferências e gera uma sequência de exercícios.
-4. Em **Sessão**, marca exercícios concluídos; ao finalizar, o treino aparece no **Histórico**.
-5. Pelo menu, pode abrir **Perfil** e **Configurações**.
-
-As rotas estão em `src/app/`: `login.js`, `inicio.js`, `treino.js`, `sessao.js`, `historico.js`, `perfil.js` e `configuracoes.js`. A navegação usa Expo Router, com controle de acesso às rotas autenticadas.
-
-## Estrutura do projeto
+**O orientador autorizou o uso do Firebase no lugar de Express e MySQL neste projeto.** O app é feito com Expo e React Native; Firebase Authentication gerencia cadastro, senha e sessão, e Cloud Firestore persiste os dados. O Firebase emite tokens de identidade JWT; o SDK do Firebase os utiliza ao acessar o Firestore. Não há API REST própria, envio manual de Bearer Token ou servidor Express nesta solução aprovada.
 
 ```text
-src/
-├── app/                  # Rotas e telas Expo Router
-├── components/           # Elementos reutilizáveis da interface
-├── context/              # Estado de autenticação e tema
-└── lib/                  # Integrações e lógica do catálogo de exercícios
+Expo / React Native
+├── Firebase Authentication: cadastro, login, sessão e tokens de identidade
+└── Firebase SDK → Cloud Firestore
+                     └── firestore.rules: propriedade dos dados e permissões
 ```
 
-## Arquitetura
+### Dados e operações
 
-Conforme a orientação do professor para este projeto, o backend desta entrega permanece no Firebase. O aplicativo Expo/React Native usa o Firebase Authentication para cadastro e login e o Cloud Firestore para persistir perfis, treinos e progresso. Não há API Express nem banco MySQL neste escopo.
+| Coleção/caminho | Uso |
+| --- | --- |
+| `users/{uid}` | Perfil, e-mail, objetivo e tipo de conta. O ID corresponde ao UID do Authentication. |
+| `users/{uid}/workouts/{workoutId}` | Treino, exercícios selecionados e séries concluídas. |
+| `exercises/{exerciseId}` | Catálogo gerenciado pelo administrador. Há exercícios locais padrão em `src/lib/exercises.js` como fallback. |
+| `professionals/{uid}` | Perfil publicado no diretório de profissionais. |
+| `conversations/{id}/messages/{messageId}` | Conversa e mensagens entre participantes autorizados. |
+
+O CRUD de treinos inclui criação, leitura, atualização do progresso e exclusão. O catálogo tem criação, leitura, atualização e exclusão, com escrita restrita ao administrador pelas regras do Firestore. Regras adicionais limitam perfis, diretório e mensagens aos respectivos proprietários ou participantes.
+
+### Conversas entre usuários e profissionais
+
+Profissionais autenticados publicam seu perfil na coleção `professionals`. Usuários escolhem um profissional em **Profissionais**; o app cria uma conversa e grava a primeira mensagem. As telas **Profissionais** e **Atendimentos** escutam as conversas e mensagens em tempo real. Cada conversa tem um aluno e um profissional; as regras permitem leitura e envio somente a esses dois participantes. Depois de publicar as regras, profissionais que já estavam cadastrados devem entrar novamente para sincronizar seu perfil no diretório.
+
+O papel de administrador é atribuído no app à conta `augusto@gmail.com`. O menu mostra **Administração** quando `session.user.role === 'admin'`; o tipo de conta dessa pessoa continua sendo `user`. As regras do Firestore também autorizam o catálogo e a consulta de contas pelo e-mail `augusto@gmail.com`. As regras em `firestore.rules` precisam estar publicadas no projeto Firebase usado pelo build. Publique a versão atual com:
+
+```powershell
+npx.cmd firebase-tools@latest login
+npx.cmd firebase-tools@latest deploy --only firestore:rules --project actus-2ba94
+```
+
+## Configuração local
+
+Requisitos: Node.js e npm. Instale as dependências, preencha `.env` com os dados do projeto Firebase e inicie o Expo:
+
+```powershell
+npm.cmd install
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+npm.cmd start
+```
+
+Preencha em `.env` os valores `EXPO_PUBLIC_FIREBASE_*` obtidos na configuração do app Web do Firebase. `.env` é ignorado pelo Git. Variáveis com prefixo `EXPO_PUBLIC_` são incluídas no aplicativo e não devem conter senhas de servidor, chaves privadas ou outros segredos.
+
+### Expo não encontra `expo-modules-core`
+
+Se o Metro mostrar `Unable to resolve module expo-modules-core`, pare o servidor Expo com `Ctrl+C` e reinstale exatamente as dependências do lockfile. Depois reinicie o Metro limpando o cache:
+
+```powershell
+npm.cmd ci
+npx.cmd expo start --clear
+```
+
+`expo-modules-core` é instalado como dependência do Expo SDK. Não instale uma versão avulsa fora do SDK configurado no `package.json`.
+
+## Verificações antes da entrega
+
+Rode as verificações estáticas:
+
+```powershell
+npm.cmd run lint
+```
+
+O código do app é JavaScript e não há `tsconfig.json`; portanto, `tsc --noEmit` não é um typecheck aplicável a este repositório.
+
+Faça também o teste manual em Android, com as regras publicadas e as variáveis de produção configuradas:
+
+1. Abrir a tela de login e testar cadastro, login, logout e sessão restaurada ao reabrir o app.
+2. Confirmar que visitante não acessa rotas autenticadas.
+3. Criar um treino, marcar e desmarcar séries, concluir o treino, conferir o histórico e excluí-lo.
+4. Confirmar que uma conta não lê nem altera o perfil ou os treinos de outra conta.
+5. Testar as permissões de usuário, profissional e administrador, incluindo o CRUD do catálogo.
+6. Testar diretório, abertura de conversa e envio/recebimento de mensagens pelos participantes.
+7. Instalar o APK em um dispositivo Android e repetir os fluxos principais.
+
+Registre os resultados e corrija eventuais falhas antes de publicar o commit final.
+
+## Gerar o APK final com EAS
+
+O repositório configura um perfil `production` de distribuição interna que gera APK. É necessário ter uma conta Expo e configurar no ambiente `production` do EAS todas as variáveis `EXPO_PUBLIC_FIREBASE_*` de `.env.example`; o `.env` local está ignorado e não é enviado ao build remoto.
+
+```powershell
+npx.cmd eas-cli@latest login
+npx.cmd eas-cli@latest build:configure
+```
+
+Na primeira configuração, o EAS pode pedir para associar o projeto à conta Expo e gravar o ID do projeto na configuração. Depois disso, configure as variáveis Firebase do ambiente `production`, rode os testes manuais acima e faça commit e push da versão final. Então gere o APK:
+
+```powershell
+npx.cmd eas-cli@latest build --platform android --profile production
+```
+
+Ao final, baixe o APK pelo link apresentado no terminal ou no painel de builds do Expo. Instale-o em Android compatível e valide os fluxos principais. Assim o APK corresponde ao commit final do repositório.
+
+## Estrutura
 
 ```text
-Aplicativo Expo / React Native
-        ├── Firebase Authentication: cadastro, login e sessão
-        └── Firebase SDK → Cloud Firestore: perfil e treinos
-                            └── firestore.rules: autenticação, propriedade e validação
+src/app/          Rotas e telas Expo Router
+src/components/   Componentes reutilizáveis
+src/context/      Autenticação e tema
+src/lib/          Firebase e lógica de exercícios/treinos
+firestore.rules   Regras de segurança do Firestore
 ```
-
-O acesso ao Firestore é feito diretamente pelo SDK oficial do Firebase, não por `fetch()` nem por uma API REST própria. As regras do Firestore são a barreira de autorização dos dados: cada pessoa autenticada só pode ler e alterar o próprio perfil e seus próprios treinos.
-
-### Requisitos funcionais atualizados
-
-- Criar conta, entrar e sair usando e-mail e senha.
-- Criar treinos a partir das preferências de grupo muscular, local, equipamentos, duração e nível.
-- Consultar o próprio treino e o histórico de treinos concluídos.
-- Atualizar o progresso de um treino, marcando exercícios concluídos.
-- Excluir um treino do próprio histórico.
-- Consultar e atualizar o próprio perfil.
-- Impedir acesso de visitantes às áreas autenticadas e impedir que uma conta acesse dados de outra.
-- Permitir que `augustokirst@gmail.com` mantenha o catálogo de exercícios, com autorização validada pelas regras do Firestore.
-
-### Modelo de dados do Cloud Firestore
-
-| Caminho | Campos principais | Uso |
-| --- | --- | --- |
-| `users/{uid}` | `name: string`, `email: string`, `goal: string`, `createdAt: timestamp`, `updatedAt?: timestamp` | Perfil do usuário autenticado. O ID do documento é o UID do Firebase Authentication. |
-| `users/{uid}/workouts/{workoutId}` | `title: string`, `muscle: string`, `place: string`, `equipment: string[]`, `duration: number`, `level: string`, `exercises: object[]`, `completedExerciseIds: string[]`, `completedAt: timestamp \| null`, `createdAt: timestamp` | Treino criado e progresso individual. Cada exercício contém `id`, `name`, `sets`, `reps`, `rest_seconds` e `instructions`. |
-
-O catálogo usado para montar os treinos é estático em `src/lib/exercises.js`; os documentos de treino guardam uma cópia dos exercícios escolhidos para preservar o conteúdo daquela sessão.
-
-### Operações de dados e fluxo
-
-| Operação | Caminho no Firestore | Implementação |
-| --- | --- | --- |
-| Criar treino | `users/{uid}/workouts` | `addDoc()` em `generateAndSaveWorkout()` após escolher as preferências. |
-| Consultar treino | `users/{uid}/workouts/{workoutId}` | `getDoc()` em `getSavedWorkout()` para abrir a sessão. |
-| Listar histórico | `users/{uid}/workouts` | `getDocs()` em `listCompletedWorkouts()`, filtrando treinos concluídos. |
-| Atualizar progresso | `users/{uid}/workouts/{workoutId}` | `updateDoc()` em `saveWorkoutProgress()` ao marcar ou desmarcar exercícios. |
-| Excluir treino | `users/{uid}/workouts/{workoutId}` | `deleteDoc()` em `deleteSavedWorkout()`, disponível no histórico com confirmação na tela. |
-
-O fluxo principal é **Início → Treino → Sessão → Histórico**. A sessão lê o treino, atualiza o progresso no Firestore e o histórico lista os treinos concluídos. As regras correspondentes estão versionadas em `firestore.rules`; elas precisam estar publicadas no projeto Firebase configurado para que as operações funcionem.
-
-### Níveis e permissões previstos
-
-Visitantes podem abrir somente cadastro e login. Usuários autenticados podem acessar e alterar o próprio perfil, criar treinos, atualizar o próprio progresso e excluir os próprios treinos. A conta `augustokirst@gmail.com` recebe o papel de administrador na interface, e as regras do Firestore autorizam essa conta a manter o catálogo de exercícios. O papel não concede acesso aos treinos privados de outros usuários.
-
-### Escopo desta entrega
-
-Esta entrega mantém a autorização do professor para usar Firebase no lugar de Express/MySQL. O Firebase Authentication gerencia o hash da senha e emite tokens de identidade JWT; o SDK mantém a sessão e envia as credenciais ao Firestore. As regras do Firestore protegem os dados e autorizam as alterações no catálogo administrativo. Não há servidor Express nem JWT próprio nesta arquitetura.
-
-## Executar o aplicativo
-
-Requisitos: Node.js e npm. Instale as dependências e inicie o Expo:
-
-```bash
-npm install
-npx expo start
-```
-
-Para habilitar login e persistência, configure as variáveis Firebase listadas em `.env.example` em um arquivo `.env` local. Sem essa configuração, o aplicativo apresenta a tela de configuração do Firebase. Publique as regras de `firestore.rules` no projeto Firebase antes de usar as operações protegidas.
-
-## Tecnologias do protótipo
-
-- Expo SDK 57, React Native e React Native Web.
-- Expo Router para navegação.
-- Firebase Authentication e Cloud Firestore como backend desta entrega.
-- AsyncStorage para salvar a preferência de tema e persistência nativa da sessão.
 
 ## Versão
 
-O aplicativo está configurado como versão **1.0.0**. A Entrega 1 estabeleceu a proposta, telas e navegação. Nesta etapa, o app persiste perfis e treinos no Firebase; as próximas etapas podem ampliar autenticação, papéis de usuário e permissões conforme o escopo acordado com o professor.
+Versão do aplicativo: **1.0.0**. O Android `versionCode` inicial é **1**.

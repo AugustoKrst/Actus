@@ -1,2 +1,2 @@
 import { Redirect } from 'expo-router';
-export default function WorkoutsRedirect() { return <Redirect href="/historico" />; }
+export default function WorkoutsRedirect() { return <Redirect href="/rotina" />; }

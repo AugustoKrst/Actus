@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, documentId, getDoc, getDocs, limit, orderBy, query, serverTimestamp, startAfter, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, documentId, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, startAfter, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
 export const defaultExercises = [
@@ -24,9 +24,37 @@ export const defaultExercises = [
   ['Dead bug', 'core', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '8 cada lado', 45, 'Movimente braços e pernas devagar, mantendo a lombar confortável.'],
   ['Abdominal na máquina', 'core', ['machines'], ['gym'], 1, '10–12', 60, 'Use carga leve e evite puxar o pescoço.'],
   ['Prancha com toque no ombro', 'core', ['bodyweight'], ['home', 'gym', 'outdoors'], 2, '8 cada lado', 45, 'Alterne as mãos com controle e mantenha o quadril estável.'],
+  ['Supino inclinado com halteres', 'chest', ['dumbbells'], ['home', 'gym'], 2, '8–12', 75, 'Mantenha as escápulas apoiadas e controle a descida.'],
+  ['Crucifixo com halteres', 'chest', ['dumbbells'], ['home', 'gym'], 2, '10–12', 60, 'Use carga leve e mantenha os cotovelos suavemente flexionados.'],
+  ['Flexão com joelhos apoiados', 'chest', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '8–12', 45, 'Mantenha o tronco alinhado dos joelhos aos ombros.'],
+  ['Remada unilateral com halter', 'back', ['dumbbells'], ['home', 'gym'], 2, '8 cada lado', 60, 'Apoie uma mão e mantenha as costas estáveis.'],
+  ['Remada baixa na máquina', 'back', ['machines'], ['gym'], 2, '10–12', 60, 'Puxe em direção ao abdômen sem arredondar as costas.'],
+  ['Levantamento terra romeno com halteres', 'back', ['dumbbells'], ['home', 'gym'], 2, '8–10', 90, 'Leve o quadril para trás e mantenha os pesos perto das pernas.'],
+  ['Superman', 'back', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '10–12', 45, 'Eleve pouco os braços e as pernas, sem forçar a lombar.'],
+  ['Ponte de glúteos', 'legs', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '12–15', 45, 'Contraia os glúteos no alto e evite arquear a lombar.'],
+  ['Elevação pélvica com carga', 'legs', ['dumbbells'], ['home', 'gym'], 2, '10–12', 75, 'Apoie as costas com segurança e aumente a carga gradualmente.'],
+  ['Agachamento búlgaro', 'legs', ['bodyweight', 'dumbbells'], ['home', 'gym'], 3, '8 cada lado', 75, 'Use um apoio estável e mantenha o joelho alinhado ao pé.'],
+  ['Levantamento de panturrilha', 'legs', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '12–20', 45, 'Suba e desça devagar, usando apoio para equilibrar-se.'],
+  ['Mesa flexora', 'legs', ['machines'], ['gym'], 2, '10–12', 60, 'Ajuste o equipamento para que o joelho fique alinhado ao eixo.'],
+  ['Desenvolvimento com halteres', 'shoulders', ['dumbbells'], ['home', 'gym'], 2, '8–12', 75, 'Mantenha o abdômen firme e use uma amplitude confortável.'],
+  ['Face pull', 'shoulders', ['bands', 'machines'], ['home', 'gym'], 2, '12–15', 60, 'Puxe em direção ao rosto com os cotovelos abertos.'],
+  ['Elevação frontal', 'shoulders', ['dumbbells'], ['home', 'gym'], 2, '10–12', 60, 'Eleve até a altura dos ombros sem balançar o corpo.'],
+  ['Rosca martelo', 'arms', ['dumbbells'], ['home', 'gym'], 2, '10–12', 60, 'Mantenha as palmas voltadas uma para a outra.'],
+  ['Tríceps acima da cabeça', 'arms', ['dumbbells'], ['home', 'gym'], 2, '10–12', 60, 'Mantenha os cotovelos apontados para a frente.'],
+  ['Rosca com elástico', 'arms', ['bands'], ['home', 'gym', 'outdoors'], 1, '12–15', 45, 'Prenda o elástico em local seguro e controle a volta.'],
+  ['Tríceps com elástico', 'arms', ['bands'], ['home', 'gym', 'outdoors'], 1, '12–15', 45, 'Mantenha os cotovelos junto ao corpo.'],
+  ['Abdominal bicicleta', 'core', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '10 cada lado', 45, 'Faça o movimento devagar, sem puxar a nuca.'],
+  ['Prancha lateral', 'core', ['bodyweight'], ['home', 'gym', 'outdoors'], 2, '20–30s cada lado', 45, 'Apoie o antebraço e mantenha o quadril elevado.'],
+  ['Bird dog', 'core', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '8 cada lado', 45, 'Estenda braço e perna opostos sem girar o quadril.'],
+  ['Abdominal reverso', 'core', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '10–15', 45, 'Eleve o quadril pouco e mantenha o movimento controlado.'],
+  ['Polichinelo', 'full_body', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '30–45s', 45, 'Escolha a versão sem saltos se preferir baixo impacto.'],
+  ['Mountain climber', 'full_body', ['bodyweight'], ['home', 'gym', 'outdoors'], 2, '20–30s', 45, 'Mantenha os ombros sobre as mãos e ajuste o ritmo.'],
+  ['Agachamento e alcance', 'full_body', ['bodyweight'], ['home', 'gym', 'outdoors'], 1, '10–12', 45, 'Agache em amplitude confortável e alcance os braços ao subir.'],
+  ['Caminhada do fazendeiro', 'full_body', ['dumbbells'], ['home', 'gym', 'outdoors'], 2, '30–45s', 60, 'Caminhe com postura alta e pesos leves ao lado do corpo.'],
+  ['Step-up em degrau baixo', 'legs', ['bodyweight', 'dumbbells'], ['home', 'gym', 'outdoors'], 1, '8 cada lado', 60, 'Use um degrau firme e baixo, subindo sem impulso.'],
 ].map(([name, muscle, equipment, places, level, reps, rest_seconds, instructions], index) => ({ id: `exercise-${index + 1}`, name, muscle, equipment, places, level, reps, rest_seconds, instructions }));
 
-const muscleMap = { Peito: ['chest'], Costas: ['back'], Pernas: ['legs'], Ombros: ['shoulders'], Braços: ['arms'], Abdômen: ['core'], 'Corpo todo': ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'] };
+const muscleMap = { Peito: ['chest'], Costas: ['back'], Pernas: ['legs'], Ombros: ['shoulders'], Braços: ['arms'], Abdômen: ['core'], 'Corpo todo': ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full_body'] };
 const placeMap = { 'Em casa': 'home', Academia: 'gym', 'Ao ar livre': 'outdoors' };
 const levelMap = { Iniciante: 1, Intermediário: 2, Avançado: 3 };
 
@@ -36,7 +64,7 @@ export async function generateAndSaveWorkout({ uid, muscle, place, equipment, du
   if (!uid || !selectedMuscles || !placeKey || !equipment?.length || !levelMap[level]) throw new Error('Confira as opções do treino e tente novamente.');
 
   const remote = await listExercises();
-  const available = remote.length ? remote : defaultExercises;
+  const available = [...defaultExercises, ...remote.filter((item) => !defaultExercises.some((base) => base.name.toLocaleLowerCase() === item.name?.toLocaleLowerCase()))];
   const matches = available.filter((exercise) => selectedMuscles.includes(exercise.muscle) && exercise.level <= levelMap[level] && exercise.places.includes(placeKey) && exercise.equipment.some((item) => equipment.includes(({ bodyweight: 'Peso corporal', dumbbells: 'Halteres', bands: 'Elástico', barbell: 'Barra', machines: 'Máquinas' })[item])));
   if (!matches.length) throw new Error('Ainda não temos exercícios para essa combinação. Tente outro equipamento ou local.');
 
@@ -123,6 +151,69 @@ export async function saveWorkoutProgress(uid, workoutId, completedSetIds, exerc
 
 export async function deleteSavedWorkout(uid, workoutId) {
   await deleteDoc(doc(db, 'users', uid, 'workouts', workoutId));
+}
+
+const WEEK_DAYS = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+const customWorkoutsRef = (uid) => collection(db, 'users', uid, 'customWorkouts');
+const weeklyRoutineRef = (uid) => doc(db, 'users', uid, 'trainingSchedules', 'weekly');
+
+export async function listCustomWorkouts(uid) {
+  const snapshot = await getDocs(customWorkoutsRef(uid));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+}
+
+export async function saveCustomWorkout(uid, workout, workoutId = null) {
+  const payload = {
+    title: workout.title.trim(), muscle: workout.muscle || 'Corpo todo',
+    level: workout.level || 'Iniciante', duration: Number(workout.duration) || 30,
+    place: workout.place || 'Em casa', equipment: Array.isArray(workout.equipment) ? workout.equipment : ['Peso corporal'],
+    exercises: workout.exercises, updatedAt: serverTimestamp(),
+  };
+  if (workoutId) {
+    await updateDoc(doc(db, 'users', uid, 'customWorkouts', workoutId), payload);
+    return { id: workoutId, ...payload };
+  }
+  const saved = await addDoc(customWorkoutsRef(uid), { ...payload, createdAt: serverTimestamp() });
+  return { id: saved.id, ...payload };
+}
+
+export async function deleteCustomWorkout(uid, workoutId) {
+  await deleteDoc(doc(db, 'users', uid, 'customWorkouts', workoutId));
+  const routine = await getWeeklyRoutine(uid);
+  const days = Object.fromEntries(WEEK_DAYS.map((day) => [day, routine.days[day].filter((id) => id !== workoutId)]));
+  await setWeeklyRoutine(uid, days);
+}
+
+export async function getWeeklyRoutine(uid) {
+  const snapshot = await getDoc(weeklyRoutineRef(uid));
+  const savedDays = snapshot.exists() ? snapshot.data().days || {} : {};
+  return { days: Object.fromEntries(WEEK_DAYS.map((day) => [day, Array.isArray(savedDays[day]) ? savedDays[day] : []])) };
+}
+
+export async function setWeeklyRoutine(uid, days) {
+  const normalized = Object.fromEntries(WEEK_DAYS.map((day) => [day, Array.isArray(days[day]) ? days[day].slice(0, 1) : []]));
+  await setDoc(weeklyRoutineRef(uid), { days: normalized, updatedAt: serverTimestamp() });
+}
+
+export async function startCustomWorkout(uid, plan) {
+  const exercises = plan.exercises.map((exercise, index) => ({
+    id: exercise.id || `custom-${index + 1}`, name: exercise.name,
+    sets: Math.max(1, Math.min(10, Number(exercise.sets) || 3)),
+    reps: String(exercise.reps || '10–12'),
+    rest_seconds: Math.max(0, Math.min(300, Number(exercise.rest_seconds) || 60)),
+    instructions: String(exercise.instructions || ''),
+  }));
+  const requestedDuration = Number(plan.duration) || 30;
+  const duration = [20, 30, 45, 60].reduce((best, value) => Math.abs(value - requestedDuration) < Math.abs(best - requestedDuration) ? value : best, 20);
+  const workout = {
+    title: plan.title, muscle: plan.muscle || 'Corpo todo', place: plan.place || 'Em casa',
+    equipment: Array.isArray(plan.equipment) ? plan.equipment : ['Peso corporal'], duration,
+    level: plan.level || 'Iniciante', exercises, completedExerciseIds: [], completedSetIds: [],
+    completedAt: null, createdAt: serverTimestamp(),
+  };
+  const saved = await addDoc(collection(db, 'users', uid, 'workouts'), workout);
+  return { ...workout, id: saved.id };
 }
 
 export async function listExercises() {

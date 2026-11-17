@@ -7,7 +7,8 @@ import { useTheme } from '../context/ThemeContext';
 
 const primaryLinks = [
   { path: '/inicio', label: 'Início', icon: '⌂' },
-  { path: '/historico', label: 'Treinos', icon: '◷' },
+  { path: '/rotina', label: 'Meus treinos', icon: '▦' },
+  { path: '/historico', label: 'Histórico', icon: '◷' },
   { path: '/treino', label: 'Montar treino', icon: '✳' },
 ];
 
@@ -42,7 +43,7 @@ export default function AppShell({ children }) {
   }
 
   function isActive(pathname) {
-    return path === pathname || (pathname === '/historico' && path === '/sessao') || (pathname === '/inicio' && path === '/');
+    return path === pathname || (pathname === '/historico' && path === '/sessao') || (pathname === '/rotina' && path === '/treinos') || (pathname === '/inicio' && path === '/');
   }
 
   return <SafeAreaView style={s.safe}><View style={s.frame}>
