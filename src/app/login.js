@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,15 +13,19 @@ export default function LoginScreen() {
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
   const [accountType, setAccountType] = useState('user');
+  const [professionalRegistrationNumber, setProfessionalRegistrationNumber] = useState('');
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const emailInput = useRef(null);
+  const passwordInput = useRef(null);
 
   async function submit() {
     setError(''); setLoading(true);
     try {
-      if (isRegister) await register({ name, email, password, accountType });
+      if (isRegister) await register({ name, email, password, accountType, professionalRegistrationNumber, privacyConsent });
       else await login({ email, password });
       router.replace('/inicio');
     } catch (e) { setError(e.message); }
@@ -44,7 +48,7 @@ export default function LoginScreen() {
         <Text style={s.formEyebrow}>{isRegister ? 'COMECE POR AQUI' : 'BEM-VINDO DE VOLTA'}</Text>
         <Text style={s.formTitle}>{isRegister ? 'Crie sua conta' : 'Entre na sua conta'}</Text>
         <Text style={s.formSub}>{isRegister ? 'Sua jornada começa com um primeiro passo.' : 'Seu próximo treino está esperando por você.'}</Text>
-        {isRegister && <Field label="SEU NOME" placeholder="Como podemos chamar você?" value={name} onChangeText={setName} autoCapitalize="words" />}
+        {isRegister && <Field label="SEU NOME" placeholder="Como podemos chamar você?" value={name} onChangeText={setName} autoCapitalize="words" returnKeyType="next" onSubmitEditing={() => emailInput.current?.focus()} autoFocus />}
         {isRegister && <View style={s.accountTypeField}>
           <Text style={s.label}>COMO VOCÊ VAI USAR O ACTUS?</Text>
           <View style={s.accountTypeOptions}>
@@ -52,8 +56,13 @@ export default function LoginScreen() {
             <AccountTypeOption selected={accountType === 'health_professional'} onPress={() => setAccountType('health_professional')} title="Profissional de saúde" description="Quero usar o Actus no meu trabalho." />
           </View>
         </View>}
-        <Field label="E-MAIL" placeholder="voce@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <Field label="SENHA" placeholder="Mínimo de 8 caracteres" value={password} onChangeText={setPassword} secureTextEntry />
+        {isRegister && accountType === 'health_professional' && <Field label="REGISTRO PROFISSIONAL" placeholder="Ex.: CREF, CRN ou CRM" value={professionalRegistrationNumber} onChangeText={setProfessionalRegistrationNumber} autoCapitalize="characters" maxLength={40} returnKeyType="next" onSubmitEditing={() => emailInput.current?.focus()} />}
+        <Field ref={emailInput} label="E-MAIL" placeholder="voce@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} returnKeyType="next" onSubmitEditing={() => passwordInput.current?.focus()} />
+        <Field ref={passwordInput} label="SENHA" placeholder="Mínimo de 8 caracteres" value={password} onChangeText={setPassword} secureTextEntry returnKeyType="done" onSubmitEditing={submit} />
+        {isRegister && <View style={s.consentRow}>
+          <Pressable onPress={() => setPrivacyConsent((value) => !value)} style={s.consentCheckTouch} accessibilityRole="checkbox" accessibilityLabel="Aceito a Política de Privacidade e o tratamento de dados de saúde e atividade física" accessibilityState={{ checked: privacyConsent }}><View style={[s.checkbox, privacyConsent && s.checkboxChecked]}><Text style={s.checkboxTick}>{privacyConsent ? '✓' : ''}</Text></View></Pressable>
+          <Text style={s.consentText}>Li a <Text onPress={() => router.push('/privacidade')} style={s.consentLink}>Política de Privacidade</Text> e concordo com o uso dos dados informados para oferecer os recursos do Actus, incluindo dados de saúde e atividade física.</Text>
+        </View>}
         {!!error && <Text style={s.error}>{error}</Text>}
         <Pressable onPress={submit} disabled={loading} style={({ pressed }) => [s.button, pressed && { opacity: 0.85 }]}>{loading ? <ActivityIndicator color="white" /> : <Text style={s.buttonText}>{isRegister ? 'Criar minha conta  →' : 'Entrar na minha conta  →'}</Text>}</Pressable>
         <View style={s.switchRow}><Text style={s.switchText}>{isRegister ? 'Já tem uma conta?' : 'Ainda não tem uma conta?'}</Text><Pressable onPress={() => { setError(''); setIsRegister(!isRegister); }}><Text style={s.switchLink}>{isRegister ? ' Fazer login' : ' Criar conta'}</Text></Pressable></View>
@@ -63,7 +72,7 @@ export default function LoginScreen() {
   </ScrollView></SafeAreaView>;
 }
 
-function Field({ label, ...props }) { const { colors } = useTheme(); const s = createStyles(colors); return <View style={s.field}><Text style={s.label}>{label}</Text><TextInput style={s.input} placeholderTextColor={colors.muted} {...props} /></View>; }
+const Field = forwardRef(function Field({ label, ...props }, ref) { const { colors } = useTheme(); const s = createStyles(colors); return <View style={s.field}><Text style={s.label}>{label}</Text><TextInput ref={ref} style={s.input} placeholderTextColor={colors.muted} accessibilityLabel={label} {...props} /></View>; });
 
 function AccountTypeOption({ selected, onPress, title, description }) { const { colors } = useTheme(); const s = createStyles(colors); return <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={[s.accountTypeOption, selected && s.accountTypeOptionSelected]}><View style={[s.radio, selected && s.radioSelected]}>{selected && <View style={s.radioDot} />}</View><View style={s.accountTypeCopy}><Text style={s.accountTypeTitle}>{title}</Text><Text style={s.accountTypeDescription}>{description}</Text></View></Pressable>; }
 
@@ -81,6 +90,7 @@ function createStyles(colors) { return StyleSheet.create({
   formEyebrow: { color: colors.green, fontWeight: '800', letterSpacing: 1.6, fontSize: 10 }, formTitle: { fontSize: 32, color: colors.ink, fontWeight: '700', letterSpacing: -0.8, marginTop: 10 }, formSub: { fontSize: 14, color: colors.muted, marginTop: 8, marginBottom: 27 },
   field: { marginBottom: 18 }, label: { color: colors.subtle, fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 8 }, input: { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.field, borderRadius: 11, height: 50, paddingHorizontal: 14, color: colors.ink, fontSize: 14 },
   accountTypeField: { marginBottom: 18 }, accountTypeOptions: { gap: 9 }, accountTypeOption: { minHeight: 68, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.field, borderRadius: 11, paddingHorizontal: 13, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 11 }, accountTypeOptionSelected: { borderColor: colors.green, backgroundColor: colors.pale }, radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' }, radioSelected: { borderColor: colors.green }, radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.green }, accountTypeCopy: { flex: 1 }, accountTypeTitle: { color: colors.ink, fontSize: 13, fontWeight: '700' }, accountTypeDescription: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
+  consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 2, marginBottom: 15 }, consentCheckTouch: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginLeft: -8 }, checkbox: { width: 20, height: 20, borderWidth: 1.5, borderColor: colors.muted, borderRadius: 5, alignItems: 'center', justifyContent: 'center' }, checkboxChecked: { backgroundColor: colors.green, borderColor: colors.green }, checkboxTick: { color: 'white', fontSize: 13, fontWeight: '800' }, consentText: { flex: 1, color: colors.muted, fontSize: 10, lineHeight: 16, paddingTop: 4 }, consentLink: { color: colors.green, textDecorationLine: 'underline', fontWeight: '700' },
   button: { backgroundColor: colors.green, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 11, marginTop: 4 }, buttonText: { color: 'white', fontWeight: '700', fontSize: 14 }, error: { color: colors.red, fontSize: 13, marginBottom: 10 },
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 21 }, switchText: { color: colors.muted, fontSize: 13 }, switchLink: { color: colors.green, fontWeight: '700', fontSize: 13 }, secure: { flexDirection: 'row', gap: 9, marginTop: 32, paddingTop: 20, borderTopWidth: 1, borderTopColor: colors.line, alignItems: 'flex-start' }, lock: { color: colors.green, fontSize: 17 }, secureText: { flex: 1, color: colors.muted, fontSize: 11, lineHeight: 17 },
 }); }

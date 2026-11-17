@@ -63,13 +63,6 @@ O CRUD de treinos inclui criação, leitura, atualização do progresso e exclus
 
 Profissionais autenticados publicam seu perfil na coleção `professionals`. Usuários escolhem um profissional em **Profissionais**; o app cria uma conversa e grava a primeira mensagem. As telas **Profissionais** e **Atendimentos** escutam as conversas e mensagens em tempo real. Cada conversa tem um aluno e um profissional; as regras permitem leitura e envio somente a esses dois participantes. Depois de publicar as regras, profissionais que já estavam cadastrados devem entrar novamente para sincronizar seu perfil no diretório.
 
-O papel de administrador é atribuído no app à conta `augusto@gmail.com`. O menu mostra **Administração** quando `session.user.role === 'admin'`; o tipo de conta dessa pessoa continua sendo `user`. As regras do Firestore também autorizam o catálogo e a consulta de contas pelo e-mail `augusto@gmail.com`. As regras em `firestore.rules` precisam estar publicadas no projeto Firebase usado pelo build. Publique a versão atual com:
-
-```powershell
-npx.cmd firebase-tools@latest login
-npx.cmd firebase-tools@latest deploy --only firestore:rules --project actus-2ba94
-```
-
 ## Configuração local
 
 Requisitos: Node.js e npm. Instale as dependências, preencha `.env` com os dados do projeto Firebase e inicie o Expo:
@@ -131,6 +124,62 @@ npx.cmd eas-cli@latest build --platform android --profile production
 ```
 
 Ao final, baixe o APK pelo link apresentado no terminal ou no painel de builds do Expo. Instale-o em Android compatível e valide os fluxos principais. Assim o APK corresponde ao commit final do repositório.
+
+### Administrador, profissionais e privacidade
+
+O acesso administrativo depende do custom claim `admin: true` emitido pelo Firebase Authentication. O cliente não escolhe esse papel. Use a conta de serviço do projeto para conceder ou remover o claim; a pessoa precisa sair e entrar novamente para receber um token atualizado.
+
+No PowerShell:
+
+```powershell
+$env:FIREBASE_PROJECT_ID = "seu-project-id"
+$env:GOOGLE_APPLICATION_CREDENTIALS = "C:\\caminho\\local\\service-account.json"
+node scripts/set-admin-claim.js <UID-ou-e-mail> grant
+# Para remover o acesso:
+node scripts/set-admin-claim.js <UID-ou-e-mail> revoke
+```
+
+No macOS/Linux:
+
+```sh
+export FIREBASE_PROJECT_ID="seu-project-id"
+export GOOGLE_APPLICATION_CREDENTIALS="$PWD/service-account.json"
+node scripts/set-admin-claim.js <UID-ou-e-mail> grant
+# Para remover o acesso:
+node scripts/set-admin-claim.js <UID-ou-e-mail> revoke
+```
+
+O script também aceita `FIREBASE_SERVICE_ACCOUNT_JSON` ou credenciais padrão do Google Cloud. Mantenha a conta de serviço fora do repositório; `.gitignore` ignora nomes comuns de chaves e a pasta `.secrets/`.
+
+Quem se cadastra como profissional informa o número de registro. O perfil só aparece no diretório e só pode iniciar atendimentos depois de um administrador conferir e aprovar o registro em **Administração**. Aprovar, revogar e publicar mudanças nas regras exige uma conta com o claim administrativo.
+
+A exclusão exige que a pessoa confirme a senha. O app reautentica no Firebase Auth e chama a Cloud Function `deleteMyAccount`, que remove perfil, subcoleções de treinos, perfil profissional e conversas. Faça o deploy das regras e da função:
+
+```powershell
+npx.cmd firebase-tools deploy --only firestore:rules,functions:deleteMyAccount --project seu-project-id
+```
+
+```sh
+npx firebase-tools deploy --only firestore:rules,functions:deleteMyAccount --project seu-project-id
+```
+
+O deploy de Cloud Functions pode exigir o plano Blaze e APIs de faturamento habilitadas. Antes da publicação, substitua o contato do controlador na Política de Privacidade em `src/app/privacidade.js`.
+
+#### App Check
+
+O chat limita cada participante a uma mensagem a cada quatro segundos por conversa, e as regras exigem que o limitador e a mensagem sejam gravados juntos. Isso complementa autenticação e regras, mas não impede sozinho clientes automatizados.
+
+No Firebase Console, registre cada app em **Segurança > App Check**, escolha o provedor da plataforma e acompanhe as métricas antes de ativar enforcement para Firestore e Cloud Functions. Este app usa o Firebase JavaScript SDK em Expo; no React Native, App Check requer um provedor personalizado de atestação nativa. Não ative enforcement para builds mobile antes de integrar e validar esse provedor. Use o provedor de debug apenas em desenvolvimento. Consulte a [matriz de ambientes suportados pelo Firebase JS SDK](https://firebase.google.com/docs/web/environments-js-sdk) e a [documentação do App Check](https://firebase.google.com/docs/app-check).
+
+Teste as regras localmente com o Firestore Emulator:
+
+```powershell
+npm.cmd run test:rules
+```
+
+```sh
+npm run test:rules
+```
 
 ## Estrutura
 

@@ -24,11 +24,15 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-actus-rules \"node --test tests/rules/firestore.rules.test.js\""
   },
   "private": true,
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
     "eslint": "^9.0.0",
-    "eslint-config-expo": "~57.0.2"
+    "eslint-config-expo": "~57.0.2",
+    "firebase-admin": "^14.5.1",
+    "firebase-tools": "^15.36.0"
   }
 }

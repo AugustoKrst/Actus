@@ -7,8 +7,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth != null
-        && request.auth.token.email == 'augusto@gmail.com';
+      return request.auth != null && request.auth.token.get('admin', false) == true;
     }
 
     function validGoal(goal) {
@@ -19,16 +18,259 @@ service cloud.firestore {
       return accountType in ['user', 'health_professional'];
     }
 
+    function validRegistrationNumber(value) {
+      return value is string && value.size() >= 3 && value.size() <= 40;
+    }
+
+    function validPrivacyConsent(data) {
+      return data.privacyConsentAt == request.time
+        && data.privacyPolicyVersion == '1.0-2026-11';
+    }
+
     function canStartConversation(studentId, studentName) {
       let profile = get(/databases/$(database)/documents/users/$(studentId)).data;
       return profile != null
-        && (!('accountType' in profile) || profile.accountType == 'user')
+        && profile.accountType == 'user'
         && (!('name' in profile)
           || !(profile.name is string)
           || profile.name.size() == 0
           || profile.name == studentName);
     }
 
+    function verifiedProfessional(professionalId) {
+      let professional = get(/databases/$(database)/documents/professionals/$(professionalId)).data;
+      return professional.accountType == 'health_professional' && professional.verified == true;
+    }
+
+    function validEquipment(items) {
+      return items is list && items.size() <= 5
+        && (items.size() < 1 || items[0] in ['bodyweight', 'dumbbells', 'bands', 'barbell', 'machines', 'Peso corporal', 'Halteres', 'Elástico', 'Barra', 'Máquinas'])
+        && (items.size() < 2 || items[1] in ['bodyweight', 'dumbbells', 'bands', 'barbell', 'machines', 'Peso corporal', 'Halteres', 'Elástico', 'Barra', 'Máquinas'])
+        && (items.size() < 3 || items[2] in ['bodyweight', 'dumbbells', 'bands', 'barbell', 'machines', 'Peso corporal', 'Halteres', 'Elástico', 'Barra', 'Máquinas'])
+        && (items.size() < 4 || items[3] in ['bodyweight', 'dumbbells', 'bands', 'barbell', 'machines', 'Peso corporal', 'Halteres', 'Elástico', 'Barra', 'Máquinas'])
+        && (items.size() < 5 || items[4] in ['bodyweight', 'dumbbells', 'bands', 'barbell', 'machines', 'Peso corporal', 'Halteres', 'Elástico', 'Barra', 'Máquinas']);
+    }
+
+    function validExercise(exercise) {
+      return exercise is map
+        && exercise.keys().hasOnly(['id', 'name', 'muscle', 'equipment', 'sets', 'reps', 'rest_seconds', 'instructions'])
+        && exercise.keys().hasAll(['id', 'name', 'sets', 'reps', 'rest_seconds'])
+        && exercise.id is string && exercise.id.size() >= 1 && exercise.id.size() <= 100
+        && exercise.name is string && exercise.name.size() >= 1 && exercise.name.size() <= 100
+        && exercise.sets is int && exercise.sets >= 1 && exercise.sets <= 10
+        && exercise.reps is string && exercise.reps.size() >= 1 && exercise.reps.size() <= 40
+        && exercise.rest_seconds is int && exercise.rest_seconds >= 0 && exercise.rest_seconds <= 300
+        && exercise.get('muscle', '') is string && exercise.get('muscle', '').size() <= 40
+        && validEquipment(exercise.get('equipment', []))
+        && exercise.get('instructions', '') is string && exercise.get('instructions', '').size() <= 500;
+    }
+
+    function validExerciseList(items) {
+      return items is list && items.size() >= 1 && items.size() <= 20
+        && validExercise(items[0])
+        && (items.size() < 2 || validExercise(items[1]))
+        && (items.size() < 3 || validExercise(items[2]))
+        && (items.size() < 4 || validExercise(items[3]))
+        && (items.size() < 5 || validExercise(items[4]))
+        && (items.size() < 6 || validExercise(items[5]))
+        && (items.size() < 7 || validExercise(items[6]))
+        && (items.size() < 8 || validExercise(items[7]))
+        && (items.size() < 9 || validExercise(items[8]))
+        && (items.size() < 10 || validExercise(items[9]))
+        && (items.size() < 11 || validExercise(items[10]))
+        && (items.size() < 12 || validExercise(items[11]))
+        && (items.size() < 13 || validExercise(items[12]))
+        && (items.size() < 14 || validExercise(items[13]))
+        && (items.size() < 15 || validExercise(items[14]))
+        && (items.size() < 16 || validExercise(items[15]))
+        && (items.size() < 17 || validExercise(items[16]))
+        && (items.size() < 18 || validExercise(items[17]))
+        && (items.size() < 19 || validExercise(items[18]))
+        && (items.size() < 20 || validExercise(items[19]));
+    }
+
+    function validCompletedExerciseIds(items) {
+      return items is list && items.size() <= 20
+        && (items.size() < 1 || (items[0] is string && items[0].size() <= 100))
+        && (items.size() < 2 || (items[1] is string && items[1].size() <= 100))
+        && (items.size() < 3 || (items[2] is string && items[2].size() <= 100))
+        && (items.size() < 4 || (items[3] is string && items[3].size() <= 100))
+        && (items.size() < 5 || (items[4] is string && items[4].size() <= 100))
+        && (items.size() < 6 || (items[5] is string && items[5].size() <= 100))
+        && (items.size() < 7 || (items[6] is string && items[6].size() <= 100))
+        && (items.size() < 8 || (items[7] is string && items[7].size() <= 100))
+        && (items.size() < 9 || (items[8] is string && items[8].size() <= 100))
+        && (items.size() < 10 || (items[9] is string && items[9].size() <= 100))
+        && (items.size() < 11 || (items[10] is string && items[10].size() <= 100))
+        && (items.size() < 12 || (items[11] is string && items[11].size() <= 100))
+        && (items.size() < 13 || (items[12] is string && items[12].size() <= 100))
+        && (items.size() < 14 || (items[13] is string && items[13].size() <= 100))
+        && (items.size() < 15 || (items[14] is string && items[14].size() <= 100))
+        && (items.size() < 16 || (items[15] is string && items[15].size() <= 100))
+        && (items.size() < 17 || (items[16] is string && items[16].size() <= 100))
+        && (items.size() < 18 || (items[17] is string && items[17].size() <= 100))
+        && (items.size() < 19 || (items[18] is string && items[18].size() <= 100))
+        && (items.size() < 20 || (items[19] is string && items[19].size() <= 100));
+    }
+
+    function validCompletedSetId(items, index) {
+      return items.size() <= index
+        || (items[index] is string && items[index].size() <= 160);
+    }
+
+    function validCompletedSetIds0(items) {
+      return true
+        && validCompletedSetId(items, 0)
+        && validCompletedSetId(items, 1)
+        && validCompletedSetId(items, 2)
+        && validCompletedSetId(items, 3)
+        && validCompletedSetId(items, 4)
+        && validCompletedSetId(items, 5)
+        && validCompletedSetId(items, 6)
+        && validCompletedSetId(items, 7)
+        && validCompletedSetId(items, 8)
+        && validCompletedSetId(items, 9);
+    }
+
+    function validCompletedSetIds1(items) {
+      return true
+        && validCompletedSetId(items, 10)
+        && validCompletedSetId(items, 11)
+        && validCompletedSetId(items, 12)
+        && validCompletedSetId(items, 13)
+        && validCompletedSetId(items, 14)
+        && validCompletedSetId(items, 15)
+        && validCompletedSetId(items, 16)
+        && validCompletedSetId(items, 17)
+        && validCompletedSetId(items, 18)
+        && validCompletedSetId(items, 19);
+    }
+
+    function validCompletedSetIds2(items) {
+      return true
+        && validCompletedSetId(items, 20)
+        && validCompletedSetId(items, 21)
+        && validCompletedSetId(items, 22)
+        && validCompletedSetId(items, 23)
+        && validCompletedSetId(items, 24)
+        && validCompletedSetId(items, 25)
+        && validCompletedSetId(items, 26)
+        && validCompletedSetId(items, 27)
+        && validCompletedSetId(items, 28)
+        && validCompletedSetId(items, 29);
+    }
+
+    function validCompletedSetIds3(items) {
+      return true
+        && validCompletedSetId(items, 30)
+        && validCompletedSetId(items, 31)
+        && validCompletedSetId(items, 32)
+        && validCompletedSetId(items, 33)
+        && validCompletedSetId(items, 34)
+        && validCompletedSetId(items, 35)
+        && validCompletedSetId(items, 36)
+        && validCompletedSetId(items, 37)
+        && validCompletedSetId(items, 38)
+        && validCompletedSetId(items, 39);
+    }
+
+    function validCompletedSetIds4(items) {
+      return true
+        && validCompletedSetId(items, 40)
+        && validCompletedSetId(items, 41)
+        && validCompletedSetId(items, 42)
+        && validCompletedSetId(items, 43)
+        && validCompletedSetId(items, 44)
+        && validCompletedSetId(items, 45)
+        && validCompletedSetId(items, 46)
+        && validCompletedSetId(items, 47)
+        && validCompletedSetId(items, 48)
+        && validCompletedSetId(items, 49);
+    }
+
+    function validCompletedSetIds5(items) {
+      return true
+        && validCompletedSetId(items, 50)
+        && validCompletedSetId(items, 51)
+        && validCompletedSetId(items, 52)
+        && validCompletedSetId(items, 53)
+        && validCompletedSetId(items, 54)
+        && validCompletedSetId(items, 55)
+        && validCompletedSetId(items, 56)
+        && validCompletedSetId(items, 57)
+        && validCompletedSetId(items, 58)
+        && validCompletedSetId(items, 59);
+    }
+
+    function validCompletedSetIds6(items) {
+      return true
+        && validCompletedSetId(items, 60)
+        && validCompletedSetId(items, 61)
+        && validCompletedSetId(items, 62)
+        && validCompletedSetId(items, 63)
+        && validCompletedSetId(items, 64)
+        && validCompletedSetId(items, 65)
+        && validCompletedSetId(items, 66)
+        && validCompletedSetId(items, 67)
+        && validCompletedSetId(items, 68)
+        && validCompletedSetId(items, 69);
+    }
+
+    function validCompletedSetIds7(items) {
+      return true
+        && validCompletedSetId(items, 70)
+        && validCompletedSetId(items, 71)
+        && validCompletedSetId(items, 72)
+        && validCompletedSetId(items, 73)
+        && validCompletedSetId(items, 74)
+        && validCompletedSetId(items, 75)
+        && validCompletedSetId(items, 76)
+        && validCompletedSetId(items, 77)
+        && validCompletedSetId(items, 78)
+        && validCompletedSetId(items, 79);
+    }
+
+    function validCompletedSetIds8(items) {
+      return true
+        && validCompletedSetId(items, 80)
+        && validCompletedSetId(items, 81)
+        && validCompletedSetId(items, 82)
+        && validCompletedSetId(items, 83)
+        && validCompletedSetId(items, 84)
+        && validCompletedSetId(items, 85)
+        && validCompletedSetId(items, 86)
+        && validCompletedSetId(items, 87)
+        && validCompletedSetId(items, 88)
+        && validCompletedSetId(items, 89);
+    }
+
+    function validCompletedSetIds9(items) {
+      return true
+        && validCompletedSetId(items, 90)
+        && validCompletedSetId(items, 91)
+        && validCompletedSetId(items, 92)
+        && validCompletedSetId(items, 93)
+        && validCompletedSetId(items, 94)
+        && validCompletedSetId(items, 95)
+        && validCompletedSetId(items, 96)
+        && validCompletedSetId(items, 97)
+        && validCompletedSetId(items, 98)
+        && validCompletedSetId(items, 99);
+    }
+
+    function validCompletedSetIds(items) {
+      return items is list && items.size() <= 100
+        && validCompletedSetIds0(items)
+        && (items.size() <= 10 || validCompletedSetIds1(items))
+        && (items.size() <= 20 || validCompletedSetIds2(items))
+        && (items.size() <= 30 || validCompletedSetIds3(items))
+        && (items.size() <= 40 || validCompletedSetIds4(items))
+        && (items.size() <= 50 || validCompletedSetIds5(items))
+        && (items.size() <= 60 || validCompletedSetIds6(items))
+        && (items.size() <= 70 || validCompletedSetIds7(items))
+        && (items.size() <= 80 || validCompletedSetIds8(items))
+        && (items.size() <= 90 || validCompletedSetIds9(items));
+    }
     function validAssignedWorkout(workout) {
       return workout is map
         && workout.keys().hasOnly(['title', 'duration', 'level', 'muscle', 'place', 'equipment', 'exercises'])
@@ -39,31 +281,55 @@ service cloud.firestore {
         && workout.level in ['Iniciante', 'Intermediário', 'Avançado']
         && workout.muscle is string
         && workout.place is string
-        && workout.equipment is list
-        && workout.exercises is list
-        && workout.exercises.size() > 0
-        && workout.exercises.size() <= 20;
+        && validEquipment(workout.equipment)
+        && validExerciseList(workout.exercises);
     }
 
     function conversationParticipant(conversationId) {
       let conversation = get(/databases/$(database)/documents/conversations/$(conversationId)).data;
       return request.auth != null
-        && (conversation.studentId == request.auth.uid || conversation.professionalId == request.auth.uid);
+        && (conversation.studentId == request.auth.uid
+          || (conversation.professionalId == request.auth.uid && verifiedProfessional(conversation.professionalId)));
+    }
+
+    function messageHasRateLimit(conversationId, senderId, messageId) {
+      let limit = getAfter(/databases/$(database)/documents/conversations/$(conversationId)/sendLimits/$(senderId)).data;
+      return limit.messageId == messageId && limit.sentAt == request.time;
+    }
+
+    function rateLimitHasMessage(conversationId, senderId, messageId) {
+      let message = getAfter(/databases/$(database)/documents/conversations/$(conversationId)/messages/$(messageId)).data;
+      return message.senderId == senderId && message.createdAt == request.time;
     }
 
     match /professionals/{professionalId} {
-      allow read: if request.auth != null;
-      allow create, update: if owns(professionalId)
+      allow read: if request.auth != null
+        && (isAdmin() || owns(professionalId) || resource.data.verified == true);
+      allow create: if owns(professionalId)
         && get(/databases/$(database)/documents/users/$(professionalId)).data.accountType == 'health_professional'
-        && request.resource.data.keys().hasOnly(['name', 'accountType', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['name', 'accountType', 'registrationNumber', 'verified', 'updatedAt'])
         && request.resource.data.name == get(/databases/$(database)/documents/users/$(professionalId)).data.name
-        && request.resource.data.accountType == 'health_professional';
+        && request.resource.data.accountType == 'health_professional'
+        && request.resource.data.registrationNumber == get(/databases/$(database)/documents/users/$(professionalId)).data.professionalRegistrationNumber
+        && request.resource.data.verified == false
+        && request.resource.data.updatedAt == request.time;
+      allow update: if (owns(professionalId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'registrationNumber', 'verified', 'updatedAt'])
+          && request.resource.data.name == get(/databases/$(database)/documents/users/$(professionalId)).data.name
+          && request.resource.data.registrationNumber == get(/databases/$(database)/documents/users/$(professionalId)).data.professionalRegistrationNumber
+          && request.resource.data.accountType == 'health_professional'
+          && (request.resource.data.verified == resource.data.get('verified', false)
+            || (!('verified' in resource.data) && request.resource.data.verified == false))
+          && request.resource.data.updatedAt == request.time)
+        || (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verified', 'updatedAt'])
+          && request.resource.data.verified is bool
+          && request.resource.data.updatedAt == request.time);
       allow delete: if false;
     }
 
     match /conversations/{conversationId} {
-      allow read: if request.auth != null
-        && (resource.data.studentId == request.auth.uid || resource.data.professionalId == request.auth.uid);
+      allow read: if conversationParticipant(conversationId);
       allow create: if request.auth != null
         && request.resource.data.keys().hasOnly(['studentId', 'studentName', 'professionalId', 'professionalName', 'createdAt'])
         && request.resource.data.studentId == request.auth.uid
@@ -74,7 +340,7 @@ service cloud.firestore {
         && request.resource.data.studentName.size() <= 80
         && canStartConversation(request.auth.uid, request.resource.data.studentName)
         && request.resource.data.professionalName == get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalId)).data.name
-        && get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalId)).data.accountType == 'health_professional'
+        && verifiedProfessional(request.resource.data.professionalId)
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
 
@@ -92,29 +358,63 @@ service cloud.firestore {
           && (!('workout' in request.resource.data)
             || (request.auth.uid == get(/databases/$(database)/documents/conversations/$(conversationId)).data.professionalId
               && validAssignedWorkout(request.resource.data.workout)))
+          && messageHasRateLimit(conversationId, request.auth.uid, messageId)
           && request.resource.data.createdAt == request.time;
         allow update, delete: if false;
+      }
+
+      match /sendLimits/{senderId} {
+        allow read: if conversationParticipant(conversationId);
+        allow create: if senderId == request.auth.uid
+          && conversationParticipant(conversationId)
+          && request.resource.data.keys().hasOnly(['messageId', 'sentAt'])
+          && request.resource.data.messageId is string
+          && request.resource.data.sentAt == request.time
+          && rateLimitHasMessage(conversationId, senderId, request.resource.data.messageId);
+        allow update: if senderId == request.auth.uid
+          && conversationParticipant(conversationId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['messageId', 'sentAt'])
+          && request.resource.data.messageId is string
+          && request.resource.data.sentAt == request.time
+          && resource.data.sentAt is timestamp
+          && request.time.toMillis() - resource.data.sentAt.toMillis() >= 4000
+          && rateLimitHasMessage(conversationId, senderId, request.resource.data.messageId);
+        allow delete: if false;
       }
     }
 
     match /users/{userId} {
       allow read: if owns(userId) || isAdmin();
       allow create: if owns(userId)
-        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'accountType', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'accountType', 'professionalRegistrationNumber', 'privacyConsentAt', 'privacyPolicyVersion', 'createdAt'])
+        && request.resource.data.keys().hasAll(['name', 'email', 'goal', 'accountType', 'privacyConsentAt', 'privacyPolicyVersion', 'createdAt'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 80
         && request.resource.data.email == request.auth.token.email
         && validGoal(request.resource.data.goal)
-        && validAccountType(request.resource.data.accountType);
+        && validAccountType(request.resource.data.accountType)
+        && (request.resource.data.accountType != 'health_professional'
+          || validRegistrationNumber(request.resource.data.professionalRegistrationNumber))
+        && validPrivacyConsent(request.resource.data)
+        && request.resource.data.createdAt == request.time;
       allow update: if owns(userId)
-        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'accountType', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'goal', 'accountType', 'professionalRegistrationNumber', 'privacyConsentAt', 'privacyPolicyVersion', 'createdAt', 'updatedAt'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 80
         && request.resource.data.email == resource.data.email
-        && (!('accountType' in resource.data) || request.resource.data.accountType == resource.data.accountType)
-        && validGoal(request.resource.data.goal);
+        && validAccountType(request.resource.data.accountType)
+        && (('accountType' in resource.data && request.resource.data.accountType == resource.data.accountType)
+          || (!('accountType' in resource.data) && request.resource.data.accountType == 'user'))
+        && (request.resource.data.get('professionalRegistrationNumber', null) == resource.data.get('professionalRegistrationNumber', null)
+          || (!('professionalRegistrationNumber' in resource.data)
+            && request.resource.data.accountType == 'health_professional'
+            && validRegistrationNumber(request.resource.data.professionalRegistrationNumber)))
+        && request.resource.data.get('privacyConsentAt', null) == resource.data.get('privacyConsentAt', null)
+        && request.resource.data.get('privacyPolicyVersion', null) == resource.data.get('privacyPolicyVersion', null)
+        && validGoal(request.resource.data.goal)
+        && request.resource.data.updatedAt == request.time;
       allow delete: if false;
 
       match /workouts/{workoutId} {
@@ -122,10 +422,15 @@ service cloud.firestore {
         allow create: if owns(userId)
           && request.resource.data.keys().hasOnly(['title', 'muscle', 'place', 'equipment', 'duration', 'level', 'exercises', 'completedExerciseIds', 'completedSetIds', 'completedAt', 'createdAt'])
           && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.muscle is string
+        && request.resource.data.muscle.size() <= 40
+        && request.resource.data.place is string
+        && request.resource.data.place.size() <= 40
           && request.resource.data.equipment is list
-          && request.resource.data.exercises is list
-          && request.resource.data.exercises.size() > 0
-          && request.resource.data.exercises.size() <= 20
+        && validEquipment(request.resource.data.equipment)
+        && validExerciseList(request.resource.data.exercises)
           && request.resource.data.completedExerciseIds is list
           && request.resource.data.completedExerciseIds.size() == 0
           && request.resource.data.completedSetIds is list
@@ -135,9 +440,9 @@ service cloud.firestore {
           && request.resource.data.level in ['Iniciante', 'Intermediário', 'Avançado'];
         allow update: if owns(userId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completedExerciseIds', 'completedSetIds', 'completedAt'])
-          && request.resource.data.completedExerciseIds is list
+          && validCompletedExerciseIds(request.resource.data.completedExerciseIds)
           && request.resource.data.completedExerciseIds.size() <= resource.data.exercises.size()
-          && request.resource.data.completedSetIds is list
+          && validCompletedSetIds(request.resource.data.completedSetIds)
           && request.resource.data.completedSetIds.size() <= 100
           && (request.resource.data.completedAt == null || request.resource.data.completedAt is timestamp);
         allow delete: if owns(userId);
@@ -151,13 +456,13 @@ service cloud.firestore {
           && request.resource.data.title.size() >= 1
           && request.resource.data.title.size() <= 60
           && request.resource.data.muscle is string
+        && request.resource.data.muscle.size() <= 40
           && request.resource.data.level in ['Iniciante', 'Intermediário', 'Avançado']
           && request.resource.data.duration in [20, 30, 45, 60]
-          && request.resource.data.place is string
-          && request.resource.data.equipment is list
-          && request.resource.data.exercises is list
-          && request.resource.data.exercises.size() > 0
-          && request.resource.data.exercises.size() <= 20
+        && request.resource.data.place is string
+        && request.resource.data.place.size() <= 40
+        && validEquipment(request.resource.data.equipment)
+        && validExerciseList(request.resource.data.exercises)
           && request.resource.data.createdAt == request.time
           && request.resource.data.updatedAt == request.time;
         allow update: if owns(userId)
@@ -166,13 +471,13 @@ service cloud.firestore {
           && request.resource.data.title.size() >= 1
           && request.resource.data.title.size() <= 60
           && request.resource.data.muscle is string
+          && request.resource.data.muscle.size() <= 40
           && request.resource.data.level in ['Iniciante', 'Intermediário', 'Avançado']
           && request.resource.data.duration in [20, 30, 45, 60]
           && request.resource.data.place is string
-          && request.resource.data.equipment is list
-          && request.resource.data.exercises is list
-          && request.resource.data.exercises.size() > 0
-          && request.resource.data.exercises.size() <= 20
+          && request.resource.data.place.size() <= 40
+          && validEquipment(request.resource.data.equipment)
+          && validExerciseList(request.resource.data.exercises)
           && request.resource.data.updatedAt == request.time;
         allow delete: if owns(userId);
       }

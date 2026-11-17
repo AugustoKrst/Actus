@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import AppShell from '../components/AppShell';
 import { Card, PageHeading, SectionTitle } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
@@ -16,6 +17,10 @@ export default function SettingsScreen() {
           <Text style={s.themeButtonText}>{mode === 'light' ? 'Escuro' : 'Claro'}</Text>
         </Pressable>
       </View>
+    </Card>
+    <Card style={s.card}>
+      <SectionTitle title="Privacidade" caption="Seus dados no Actus" />
+      <View style={s.themeRow}><View style={s.themeCopy}><Text style={s.themeTitle}>Política de Privacidade</Text><Text style={s.themeDescription}>Veja quais dados são usados e como solicitar sua exclusão.</Text></View><Pressable onPress={() => router.push('/privacidade')} style={s.themeButton} accessibilityRole="button"><Text style={s.themeButtonText}>Ler política</Text></Pressable></View>
     </Card>
   </View></AppShell>;
 }

@@ -23,7 +23,7 @@ export default function AppShell({ children }) {
   const initial = (session?.user?.name || 'A').slice(0, 1).toUpperCase();
   const navigationLinks = [
     ...primaryLinks,
-    ...(session?.user?.accountType === 'health_professional'
+    ...(session?.user?.role === 'health_professional'
       ? [{ path: '/atendimentos', label: 'Atendimentos', icon: '✉' }]
       : session?.user?.accountType === 'user'
         ? [{ path: '/contato', label: 'Profissionais', icon: '✉' }]

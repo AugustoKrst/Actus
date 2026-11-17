@@ -232,6 +232,17 @@ export async function deleteExercise(exerciseId) {
   await deleteDoc(doc(db, 'exercises', exerciseId));
 }
 
+export async function listProfessionalsByVerification(verified) {
+  const snapshot = await getDocs(collection(db, 'professionals'));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item) => (item.verified === true) === verified)
+    .sort((first, second) => (first.name || '').localeCompare(second.name || '', 'pt-BR'));
+}
+
+export async function setProfessionalVerification(professionalId, verified) {
+  await updateDoc(doc(db, 'professionals', professionalId), { verified: Boolean(verified), updatedAt: serverTimestamp() });
+}
+
 const ACCOUNT_PAGE_SIZE = 50;
 
 export async function listRegisteredUsers(cursor = null) {

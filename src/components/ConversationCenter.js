@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { addDoc, collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../lib/firebaseConfig';
 import { defaultExercises, startCustomWorkout } from '../lib/exercises';
 import { Card, PageHeading } from './ui';
+
+async function sendConversationMessage(conversationId, senderId, data) {
+  const messageRef = doc(collection(db, 'conversations', conversationId, 'messages'));
+  const limitRef = doc(db, 'conversations', conversationId, 'sendLimits', senderId);
+  const batch = writeBatch(db);
+  batch.set(messageRef, { ...data, createdAt: serverTimestamp() });
+  batch.set(limitRef, { messageId: messageRef.id, sentAt: serverTimestamp() });
+  await batch.commit();
+}
 
 function describeFirestoreError(cause, action) {
   if (cause?.code === 'permission-denied') {
@@ -26,7 +35,7 @@ export default function ConversationCenter({ mode }) {
   const user = session?.user;
   const isProfessional = mode === 'professional';
   const canUseScreen = isProfessional
-    ? user?.accountType === 'health_professional'
+    ? user?.accountType === 'health_professional' && user?.professionalVerified === true
     : user?.accountType === 'user';
   const [conversations, setConversations] = useState([]);
   const [professionals, setProfessionals] = useState([]);
@@ -50,7 +59,7 @@ export default function ConversationCenter({ mode }) {
 
   useEffect(() => {
     if (!canUseScreen || isProfessional || !user?.uid) return undefined;
-    return onSnapshot(query(collection(db, 'professionals'), limit(100)), (snapshot) => {
+    return onSnapshot(query(collection(db, 'professionals'), where('verified', '==', true), limit(100)), (snapshot) => {
       const rows = snapshot.docs
         .filter((item) => item.id !== user.uid)
         .map((item) => ({ id: item.id, ...item.data() }))
@@ -135,11 +144,10 @@ export default function ConversationCenter({ mode }) {
         });
       }
       action = 'enviar a mensagem inicial';
-      await addDoc(collection(conversationRef, 'messages'), {
+      await sendConversationMessage(conversationId, user.uid, {
         senderId: user.uid,
         senderName: user.name || 'Aluno',
         text: opening,
-        createdAt: serverTimestamp(),
       });
       setSelected({
         id: conversationId,
@@ -173,7 +181,7 @@ export default function ConversationCenter({ mode }) {
       const senderName = selectedConversation.studentId === user.uid
         ? selectedConversation.studentName
         : selectedConversation.professionalName;
-      await addDoc(collection(db, 'conversations', selectedConversation.id, 'messages'), {
+      await sendConversationMessage(selectedConversation.id, user.uid, {
         senderId: user.uid,
         senderName: senderName || user.name || (isProfessional ? 'Profissional' : 'Aluno'),
         text: text || `Treino enviado: ${workoutTitle.trim()}`,
@@ -186,7 +194,6 @@ export default function ConversationCenter({ mode }) {
           equipment: ['Peso corporal'],
           exercises: assignedExercises.slice(0, 20),
         } } : {}),
-        createdAt: serverTimestamp(),
       });
       setDraft('');
       if (attachingWorkout) {

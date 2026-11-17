@@ -5,7 +5,7 @@ import AppShell from '../components/AppShell';
 import { Card, PageHeading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { deleteExercise, listExercises, listRegisteredUsers, saveExercise } from '../lib/exercises';
+import { deleteExercise, listExercises, listProfessionalsByVerification, listRegisteredUsers, saveExercise, setProfessionalVerification } from '../lib/exercises';
 
 const blank = { name: '', muscle: 'legs', equipment: 'bodyweight', places: 'home', level: '1', reps: '10–12', rest_seconds: '60', instructions: '' };
 const fields = [
@@ -32,6 +32,11 @@ export default function AdminScreen() {
   const [accountsHaveMore, setAccountsHaveMore] = useState(false);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [accountsError, setAccountsError] = useState('');
+  const [pendingProfessionals, setPendingProfessionals] = useState([]);
+  const [verifiedProfessionals, setVerifiedProfessionals] = useState([]);
+  const [professionalsLoading, setProfessionalsLoading] = useState(false);
+  const [professionalsError, setProfessionalsError] = useState('');
+  const [updatingProfessionalId, setUpdatingProfessionalId] = useState(null);
 
   const loadExercises = useCallback(async () => {
     try {
@@ -61,14 +66,34 @@ export default function AdminScreen() {
     }
   }, []);
 
+  const loadProfessionals = useCallback(async () => {
+    setProfessionalsLoading(true);
+    setProfessionalsError('');
+    try {
+      const [pending, verified] = await Promise.all([
+        listProfessionalsByVerification(false),
+        listProfessionalsByVerification(true),
+      ]);
+      setPendingProfessionals(pending);
+      setVerifiedProfessionals(verified);
+    } catch (loadError) {
+      setProfessionalsError(loadError.code === 'permission-denied'
+        ? 'Seu acesso administrativo não foi reconhecido. Atualize a sessão e tente novamente.'
+        : 'Não foi possível carregar os profissionais. Confira a conexão e tente novamente.');
+    } finally {
+      setProfessionalsLoading(false);
+    }
+  }, []);
+
   useFocusEffect(useCallback(() => {
     if (session?.user?.role === 'admin') {
       loadExercises();
       loadAccounts();
+      loadProfessionals();
     } else if (session) {
       router.replace('/inicio');
     }
-  }, [loadAccounts, loadExercises, session]));
+  }, [loadAccounts, loadExercises, loadProfessionals, session]));
 
   if (!session || session.user.role !== 'admin') return null;
 
@@ -119,8 +144,46 @@ export default function AdminScreen() {
     }
   }
 
+  async function changeProfessionalVerification(professional, verified) {
+    setUpdatingProfessionalId(professional.id);
+    setProfessionalsError('');
+    try {
+      await setProfessionalVerification(professional.id, verified);
+      await loadProfessionals();
+    } catch {
+      setProfessionalsError('Não foi possível atualizar a verificação. Confirme se as regras publicadas reconhecem seu acesso de administrador.');
+    } finally {
+      setUpdatingProfessionalId(null);
+    }
+  }
+
   return <AppShell><View style={s.page}>
     <PageHeading eyebrow="ADMINISTRAÇÃO" title="Painel administrativo" description="Gerencie o catálogo de exercícios e consulte as contas cadastradas." />
+
+    <Card style={s.card}>
+      <Text style={s.sectionTitle}>Profissionais pendentes</Text>
+      <Text style={s.muted}>Confira o registro profissional antes de aprovar o acesso ao diretório e aos atendimentos.</Text>
+      {!!professionalsError && <Text style={s.error}>{professionalsError}</Text>}
+      {professionalsLoading && pendingProfessionals.length === 0
+        ? <View style={s.loading}><ActivityIndicator color={colors.green} /><Text style={s.muted}>Carregando profissionais...</Text></View>
+        : pendingProfessionals.length === 0
+          ? <Text style={s.empty}>{professionalsError ? '' : 'Não há profissionais aguardando aprovação.'}</Text>
+          : pendingProfessionals.map((professional) => <View key={professional.id} style={s.professionalRow}>
+            <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View>
+            <Pressable onPress={() => changeProfessionalVerification(professional, true)} disabled={updatingProfessionalId === professional.id} style={s.approveButton} accessibilityRole="button" accessibilityLabel={`Aprovar ${professional.name}`}><Text style={s.approveText}>{updatingProfessionalId === professional.id ? 'Salvando...' : 'Aprovar'}</Text></Pressable>
+          </View>)}
+      {professionalsError && <Pressable onPress={loadProfessionals} style={s.moreButton} accessibilityRole="button"><Text style={s.cancelText}>Tentar novamente</Text></Pressable>}
+    </Card>
+
+    <Card style={s.card}>
+      <Text style={s.sectionTitle}>Profissionais verificados</Text>
+      {verifiedProfessionals.length === 0 && !professionalsLoading
+        ? <Text style={s.empty}>Nenhum profissional aprovado por enquanto.</Text>
+        : verifiedProfessionals.map((professional) => <View key={professional.id} style={s.professionalRow}>
+          <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View>
+          <Pressable onPress={() => changeProfessionalVerification(professional, false)} disabled={updatingProfessionalId === professional.id} style={s.revokeButton} accessibilityRole="button" accessibilityLabel={`Revogar verificação de ${professional.name}`}><Text style={s.revokeText}>{updatingProfessionalId === professional.id ? 'Salvando...' : 'Revogar'}</Text></Pressable>
+        </View>)}
+    </Card>
 
     <Card style={s.card}>
       <Text style={s.sectionTitle}>{editing ? 'Editar exercício' : 'Cadastrar exercício'}</Text>
@@ -174,5 +237,6 @@ function createStyles(colors) { return StyleSheet.create({
   input: { minHeight: 44, borderWidth: 1, borderColor: colors.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9, color: colors.ink, marginBottom: 9 }, multiline: { minHeight: 80, textAlignVertical: 'top' },
   primaryButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.green, marginTop: 4, paddingHorizontal: 14 }, primaryText: { color: 'white', fontSize: 11, fontWeight: '700' }, cancelButton: { padding: 12, alignItems: 'center' }, cancelText: { color: colors.green, fontSize: 11, fontWeight: '700' },
   exerciseRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 9, borderTopWidth: 1, borderColor: colors.line, paddingVertical: 8 }, rowCopy: { flex: 1 }, rowTitle: { color: colors.ink, fontSize: 12, fontWeight: '700' }, smallButton: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 8, backgroundColor: colors.green }, deleteButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 5 }, deleteText: { color: colors.red, fontSize: 10, fontWeight: '700' },
+  professionalRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderColor: colors.line, paddingVertical: 10 }, approveButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 9, justifyContent: 'center', backgroundColor: colors.green }, approveText: { color: 'white', fontSize: 11, fontWeight: '800' }, revokeButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 9, justifyContent: 'center', backgroundColor: colors.soft }, revokeText: { color: colors.red, fontSize: 11, fontWeight: '800' },
   accountRow: { borderTopWidth: 1, borderColor: colors.line, paddingVertical: 12, gap: 4 }, accountEmail: { color: colors.green, fontSize: 11 }, muted: { color: colors.muted, fontSize: 10, marginTop: 3 }, error: { color: colors.red, fontSize: 11, marginTop: 8 }, empty: { color: colors.muted, fontSize: 11, marginTop: 14 }, loading: { minHeight: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }, moreButton: { minHeight: 44, borderRadius: 9, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
 }); }
