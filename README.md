@@ -11,11 +11,12 @@ A falta de tempo, equipamento ou orientação pode dificultar a prática regular
 - Cadastro, login e logout com e-mail e senha.
 - Perfis de usuário, profissional de saúde e administrador.
 - Criação de treino por grupo muscular, local, equipamentos, duração e nível.
+- Biblioteca de treinos personalizados com uma programação semanal: cada dia recebe um treino ou descanso.
 - Sessão de treino com marcação de séries concluídas e salvamento do progresso.
 - Histórico de treinos concluídos e exclusão de um treino do histórico.
 - Perfil com nome e objetivo pessoal.
 - Catálogo de exercícios administrado pela conta designada.
-- Conversas entre usuários e profissionais de saúde.
+- Conversas entre usuários e profissionais de saúde, com envio de treinos personalizados pelo profissional.
 - Preferência de tema salva no dispositivo.
 
 ## Navegação
@@ -27,12 +28,14 @@ O projeto usa Expo Router. As rotas estão em `src/app/`:
 | `login.js` | Cadastro e autenticação. |
 | `inicio.js` | Entrada e apresentação do aplicativo. |
 | `treino.js` | Preferências e criação de treino. |
+| `rotina.js` | Biblioteca de treinos e planejamento de segunda a domingo. |
 | `sessao.js` | Execução e progresso das séries. |
 | `historico.js` | Treinos concluídos e exclusão. |
 | `perfil.js` | Dados pessoais e objetivo. |
 | `configuracoes.js` | Preferências do aplicativo. |
 | `admin.js` | Administração de exercícios e contas. |
 | `atendimentos.js`, `contato.js` | Diretório e comunicação com profissionais. |
+| `privacidade.js` | Política de privacidade e direitos de dados. |
 
 Visitantes ficam restritos ao login/cadastro. Usuários autenticados acessam os próprios dados. Profissionais mantêm um perfil público no diretório e participam de conversas com usuários. O administrador pode gerenciar o catálogo e consultar contas, mas não recebe acesso aos treinos privados de outras pessoas.
 
@@ -53,15 +56,33 @@ Expo / React Native
 | --- | --- |
 | `users/{uid}` | Perfil, e-mail, objetivo e tipo de conta. O ID corresponde ao UID do Authentication. |
 | `users/{uid}/workouts/{workoutId}` | Treino, exercícios selecionados e séries concluídas. |
+| `users/{uid}/customWorkouts/{workoutId}` | Biblioteca privada de treinos criada pela pessoa. |
+| `users/{uid}/trainingSchedules/weekly` | Documento `days` com o treino escolhido ou descanso para cada dia. |
 | `exercises/{exerciseId}` | Catálogo gerenciado pelo administrador. Há exercícios locais padrão em `src/lib/exercises.js` como fallback. |
 | `professionals/{uid}` | Perfil publicado no diretório de profissionais. |
-| `conversations/{id}/messages/{messageId}` | Conversa e mensagens entre participantes autorizados. |
+| `conversations/{id}` | Participantes aluno/profissional e metadados da conversa. |
+| `conversations/{id}/messages/{messageId}` | Mensagem de texto ou mensagem com `workout` anexado e timestamp. O aluno pode salvar o treino recebido na própria coleção `workouts`. |
+| `conversations/{id}/sendLimits/{uid}` | Último envio por participante; as regras exigem um intervalo de quatro segundos entre mensagens. |
 
 O CRUD de treinos inclui criação, leitura, atualização do progresso e exclusão. O catálogo tem criação, leitura, atualização e exclusão, com escrita restrita ao administrador pelas regras do Firestore. Regras adicionais limitam perfis, diretório e mensagens aos respectivos proprietários ou participantes.
 
 ### Conversas entre usuários e profissionais
 
-Profissionais autenticados publicam seu perfil na coleção `professionals`. Usuários escolhem um profissional em **Profissionais**; o app cria uma conversa e grava a primeira mensagem. As telas **Profissionais** e **Atendimentos** escutam as conversas e mensagens em tempo real. Cada conversa tem um aluno e um profissional; as regras permitem leitura e envio somente a esses dois participantes. Depois de publicar as regras, profissionais que já estavam cadastrados devem entrar novamente para sincronizar seu perfil no diretório.
+O profissional se cadastra com o número de registro e aguarda aprovação administrativa. Só perfis verificados aparecem em **Profissionais** e podem iniciar atendimentos. O usuário escolhe um profissional; o app cria uma conversa e grava a primeira mensagem. As telas **Profissionais** e **Atendimentos** escutam as conversas e mensagens em tempo real. Cada conversa tem um aluno e um profissional; as regras permitem leitura e envio somente a esses dois participantes. Na conversa, o profissional pode alternar entre texto e **Enviar treino**, escolher exercícios, nível e duração e anexar o plano. O aluno pode abrir o treino, que é salvo na conta dele antes de iniciar. Depois de publicar as regras, profissionais que já estavam cadastrados devem entrar novamente para sincronizar seu perfil no diretório.
+
+## Capturas de tela
+
+Capturas responsivas das telas implementadas:
+
+| Entrada no desktop | Início no desktop |
+| --- | --- |
+| ![Tela de entrada no desktop](docs/screenshots/actus-login-desktop.png) | ![Tela inicial no desktop](docs/screenshots/actus-home-desktop.png) |
+
+| Entrada no celular | Montador de treino no celular |
+| --- | --- |
+| ![Tela de entrada no celular](docs/screenshots/actus-login-mobile.png) | ![Montador de treino no celular](docs/screenshots/actus-builder-mobile.png) |
+
+As imagens não contêm dados pessoais. A validação de fluxos que dependem de Firebase requer projeto configurado e conta de teste.
 
 ## Configuração local
 
@@ -92,7 +113,11 @@ Rode as verificações estáticas:
 
 ```powershell
 npm.cmd run lint
+npm.cmd --prefix functions run lint
+npm.cmd run test:rules
 ```
+
+O teste de regras executa no Firestore Emulator e cobre propriedade de dados, acesso administrativo, aprovação profissional, validação de treinos, limite de mensagens e migração de contas antigas.
 
 O código do app é JavaScript e não há `tsconfig.json`; portanto, `tsc --noEmit` não é um typecheck aplicável a este repositório.
 
@@ -164,6 +189,10 @@ npx firebase-tools deploy --only firestore:rules,functions:deleteMyAccount --pro
 ```
 
 O deploy de Cloud Functions pode exigir o plano Blaze e APIs de faturamento habilitadas. Antes da publicação, substitua o contato do controlador na Política de Privacidade em `src/app/privacidade.js`.
+
+O Firebase App Check está documentado, mas ainda não está integrado ao cliente mobile. A publicação exige também configurar os custom claims, publicar `firestore.rules` e a Cloud Function e testar o app em um build Android real.
+
+No ambiente desta revisão, `npm audit --omit=dev` reportou 35 vulnerabilidades de dependências (33 altas e 2 moderadas). Avalie atualizações compatíveis com o Expo SDK 57 antes de publicar; a árvore de produção não ficou sem alertas nesta etapa.
 
 #### App Check
 

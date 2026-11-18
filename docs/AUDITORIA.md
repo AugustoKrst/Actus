@@ -48,28 +48,78 @@
 
 | Verificação | Resultado inicial | Status |
 |---|---|---|
-| Listeners Firestore/Auth sem cleanup | As funções de `onSnapshot` retornam o unsubscribe; o listener de Auth também retorna o unsubscribe. | Corrigido na base |
-| Corrida em leitura de autenticação | `AuthContext` compara o UID ativo; telas assíncronas variam, algumas têm guarda de desmontagem e outras não. | Parcial |
-| Estados que sobrevivem a logout/troca de conta | A sessão é zerada no logout; não há reset compartilhado de estados locais/consultas de tela. | Parcial |
-| Proteção contra toque duplo | Login, perfil, sessão e chat aplicam `loading`/`busy` em parte das ações; admin e algumas ações de rotina não. | Parcial |
-| Estados loading/vazio/erro | Há estados em histórico, rotina, sessão e atendimento; admin não cobre todas as consultas e algumas telas não têm retry. | Parcial |
-| Tema claro/escuro | Contexto e paletas existem; estilos próprios/hardcoded impedem consistência total. | Parcial |
-| Texto técnico ou inglês | Auth traduz os principais códigos, porém admin/contexto e outras telas usam `error.message`; instruções técnicas aparecem na tela de configuração. | Parcial |
-| Acessibilidade | Alguns controles têm `accessibilityRole`/`Label`; cobertura e alvos de 48dp não são uniformes. | Parcial |
-| Teclado e Safe Area | Login usa `KeyboardAvoidingView`; setup e shell usam safe area; formulários em outras telas não evitam o teclado. | Parcial |
-| Listas potencialmente longas | Conversas, histórico, contas e exercícios usam `.map()`; contas são paginadas, as demais consultas incluem coleções potencialmente sem limite. | Pendente |
-| `console.log` e código morto | A varredura não encontrou `console.log` em `src/`; verificar rotas/imports e caminhos após as etapas. | Sem ocorrência na varredura |
-| Segredos versionados | `.env` local está coberto por `.gitignore` e não aparece no índice Git; `.env.example` não deve conter valores reais. | Verificado |
+| Listeners Firestore/Auth sem cleanup | As funções de `onSnapshot` e o listener de Auth retornam unsubscribe. | Corrigido |
+| Corrida em leitura de autenticação | `AuthContext` compara o UID ativo; algumas cargas de tela ainda não cancelam/reiniciam todos os estados locais. | Parcial |
+| Estados que sobrevivem a logout/troca de conta | Logout limpa a sessão e fecha o menu; não há reset compartilhado de todos os estados locais de telas. | Parcial |
+| Proteção contra toque duplo | Login, perfil, sessão, chat, rotina e aprovação admin bloqueiam envios enquanto salvam; alguns controles administrativos não têm estado individual de carregamento. | Parcial |
+| Estados loading/vazio/erro | Componentes compartilhados e retries foram adicionados, mas algumas consultas da administração ainda usam mensagens em linha. | Parcial |
+| Tema claro/escuro | Paletas e tokens semânticos centralizados; algumas telas mantêm estilos e cores locais. | Parcial |
+| Texto técnico ou inglês | Mensagens de sessão, chat, cadastro e administração foram normalizadas; há mensagens técnicas intencionais em diagnóstico/configuração. | Parcial |
+| Acessibilidade | Labels, estados, alvos de toque e ícones foram ampliados; a conferência WCAG com leitor de tela ainda não foi feita. | Parcial |
+| Teclado e Safe Area | Login/setup/shell respeitam Safe Area; teclado e rolagem não foram revisados manualmente em todas as telas/dispositivos. | Parcial |
+| Listas potencialmente longas | Histórico e diretórios usam `FlatList`; mensagens têm limite de 60 e páginas de contas/catálogo têm limites. Treinos personalizados não têm paginação. | Parcial |
+| `console.log` e código morto | A varredura não encontrou `console.log` em `src/`. | Corrigido/verificado |
+| Segredos versionados | `.env` é ignorado e não está no índice; `.env.example` contém apenas marcadores. | Corrigido/verificado |
+
+## Status final de cada achado
+
+Os problemas da primeira tabela foram identificados antes de editar o código. A tabela abaixo registra o resultado do trabalho até esta versão.
+
+| Item auditado | Status | Resultado e motivo |
+|---|---|---|
+| `firestore.rules` — administração por claim, aprovação de profissionais e diretório | Corrigido | Administração usa custom claim; registro profissional fica pendente até aprovação e só perfis verificados entram no diretório e no chat. |
+| `firestore.rules` — `accountType` e validação de dados | Corrigido | Tipo de conta é imutável; documentos novos, treinos, séries, anexos e mensagens têm tipos e limites validados. Testes Emulator cobrem tentativas inválidas. |
+| `firestore.rules` — frequência de mensagens e App Check | Parcial | Limite atômico de quatro segundos e validação de conteúdo foram implementados. App Check nativo foi adiado porque o cliente usa Firebase JS SDK e requer provedor de atestação próprio; essa condição e o procedimento de deploy estão documentados. |
+| `firestore.rules` / Cloud Function — exclusão completa da conta | Parcial | Reautenticação e `deleteMyAccount` com remoção de subcoleções, conversas e conta foram implementadas. A função e as regras ainda precisam ser publicadas no projeto do responsável e validadas em produção. |
+| `src/context/AuthContext.js` — papel de administrador/profissional e falha de perfil | Parcial | O papel admin vem do token; profissional depende de aprovação. Em falha de leitura, a interface assume usuário comum por segurança, mas não há uma tela dedicada para cada falha de sincronização do perfil. |
+| `src/context/AuthContext.js` — consentimento, registro e dados de cadastro | Corrigido | Cadastro valida nome, e-mail, senha e registro profissional; grava versão e data do consentimento. |
+| `src/context/AuthContext.js` — listener e troca de sessão | Parcial | Unsubscribe e comparação de UID foram mantidos. A limpeza dos estados locais de todas as telas ainda não é compartilhada. |
+| `src/context/ThemeContext.js` — flash inicial e persistência | Parcial | Tema persiste e expõe estado `ready`; a árvore de navegação ainda não espera esse estado antes do primeiro desenho. Erro local de armazenamento continua silencioso. |
+| `src/lib/theme.js` — cores e escalas globais | Parcial | Paletas claro/escuro, espaçamento, raio, tipografia e alvos de toque foram centralizados em `src/theme/`; telas antigas ainda mantêm parte das medidas locais. |
+| `src/lib/firebaseConfig.js` — configuração ausente | Corrigido | Auth só monta com configuração válida; caso contrário, a tela explica como configurar `.env`. |
+| `src/lib/firebase.native.js` — falha nativa de inicialização | Adiado | Não houve falha reproduzível além de configuração ausente. Uma tela para erros de inicialização do SDK precisa de reprodução em build nativo. |
+| `src/lib/exercises.js` — validação e consistência de gravações | Parcial | Erros comuns são apresentados em português e os dados são validados nas regras. A remoção de plano e atualização da programação ainda são duas operações separadas. |
+| `src/lib/exercises.js` — histórico e listas crescentes | Parcial | Histórico consulta páginas de 30 e calcula total/média no servidor. Catálogo, biblioteca personalizada e mensagens antigas ainda têm limites/consultas que não cobrem toda paginação. |
+| `src/app/login.js` — cadastro profissional, consentimento e validação | Corrigido | Campos mostram erros inline, senha mínima é coerente com Auth, consentimento é exigido e o registro profissional fica pendente de aprovação. |
+| `src/app/login.js` — acessibilidade e teclado | Parcial | `SafeAreaView`, `KeyboardAvoidingView`, navegação entre campos, estados de acessibilidade e layout responsivo foram revisados; leitor de tela não foi testado em aparelho. |
+| `src/app/index.js` — carregamento acessível | Parcial | Há indicador de inicialização; ainda não usa o componente `LoadingState` nem anuncia mensagem específica. |
+| `src/app/_layout.js` — tema e navegação segura | Parcial | Safe Area, StatusBar e controle de acesso permanecem. O tema inicial ainda pode aparecer antes da leitura de preferência e a StatusBar compara cor diretamente. |
+| `src/app/inicio.js` — aviso de saúde e consistência visual | Parcial | Aviso de saúde e ícones do Expo foram adicionados. Os estilos de ilustração ainda usam medidas e tons locais próprios da marca. |
+| `src/app/treino.js` — gerador e resultado | Parcial | Erros, loading, ícones, rótulos acessíveis e seleção responsiva existem. A lista de resultado não é virtualizada, pois contém apenas os exercícios de uma sessão. |
+| `src/app/rotina.js` — programação, editor e estados | Parcial | Cada dia aceita um treino ou descanso; retry, exclusão confirmada, alvos maiores e estados vazios/loading/erro foram adicionados. Catálogo e biblioteca personalizada ainda usam renderização local sem paginação. |
+| `src/app/sessao.js` — progresso e saída | Corrigido | Cada série salva ao alternar, o percentual evita divisão por zero, erros Firebase são traduzidos e qualquer navegação que remova a tela pede confirmação enquanto o treino está em andamento. |
+| `src/app/historico.js` — resumo, paginação e exclusão | Corrigido | `FlatList`, atualização por gesto, páginas de 30, total/média e confirmação de exclusão foram implementados. |
+| `src/app/perfil.js` e `src/components/ProfileEditor.js` — dados e exclusão | Corrigido | Formulário segue UID, valida nome no contexto, exclusão exige senha recente e chama a Cloud Function. O deploy externo continua pendente. |
+| `src/app/configuracoes.js` — aparência e privacidade | Corrigido | Tema continua persistido e a política de privacidade pode ser aberta nas configurações. |
+| `src/app/admin.js` — aprovação, catálogo e listas | Parcial | Claim, aprovação/revogação, paginação de contas e confirmação de exclusão de exercício foram implementados. Catálogo e consultas administrativas ainda não usam estados compartilhados em todos os casos. |
+| `src/app/atendimentos.js` e `src/app/contato.js` — controle de acesso | Corrigido | São wrappers finos; bloqueio por papel/perfil e regras do Firestore protegem as operações. |
+| `src/app/treinos.js` — rota compatível e rótulos | Corrigido | A rota antiga segue redirecionando para a rotina semanal e a navegação usa “Meus treinos”. |
+| `src/components/ConversationCenter.js` — listeners, rolagem, horário e erros | Parcial | Assinaturas limpam listeners; mensagens têm hora `pt-BR`, rolagem automática e retry. A tela carrega até 60 mensagens e ainda não navega para mensagens anteriores. |
+| `src/components/ConversationCenter.js` — listas e treinos anexados | Parcial | Diretório/inbox/mensagens usam `FlatList`; profissional escolhe exercícios e anexa treino, que o aluno salva antes de iniciar. Falta paginação de conversas e mensagens antigas. |
+| `src/components/ConversationCenter.js` — tamanho do componente | Parcial | Estados de lista, chat, anexo e erro foram mantidos em um único componente; a divisão em subcomponentes não foi necessária para fechar o fluxo funcional. |
+| `src/components/AppShell.js` — navegação, ícones e logout | Corrigido | Ícones Feather, confirmação de logout, fechamento do menu ao navegar e navegação móvel concentrada no menu foram adicionados. |
+| `src/components/ui.js` — componentes compartilhados | Parcial | Button, Input, Card, Header, estados loading/vazio/erro e ConfirmDialog existem. Indicadores de foco e estados visuais não foram uniformizados em todas as telas antigas. |
+| `src/components/ProfileEditor.js` — erros e acessibilidade | Parcial | Campos e botões têm alvos maiores, salvamento e estados de exclusão. Parte do formulário ainda usa estilos locais em vez do `Input` compartilhado. |
+| `src/components/FirebaseSetupScreen.js` — configuração multiplataforma | Corrigido | Instruções agora cobrem PowerShell e macOS/Linux, mantêm Safe Area e usam Feather. |
+| `src/app` e `src/components` — tokens, ícones e contraste | Parcial | Tokens e ícones vetoriais foram adotados nas telas principais; ainda falta revisar cada cor/tamanho e executar avaliação WCAG/leitor de tela nos dois temas. |
+
+## Verificações e riscos restantes
+
+- `npx expo lint` e `npm.cmd run test:rules` passaram; a suíte do Emulator teve 9 testes aprovados. `npm.cmd --prefix functions run lint` também é exigido antes de fechar a documentação.
+- `tsc --noEmit` não se aplica: o aplicativo é JavaScript e não possui `tsconfig.json`.
+- A validação em Android real e os deploys de Firestore/Cloud Functions dependem do projeto Firebase e credenciais do responsável.
+- App Check para o cliente mobile segue sem integração; não ative enforcement para esses builds antes de integrar o provedor nativo.
+- `npm audit --omit=dev` encontrou 35 vulnerabilidades na árvore de produção (33 altas e 2 moderadas). Atualizações forçadas podem quebrar as versões acopladas ao Expo SDK 57; revisar as correções em uma etapa de dependências antes de publicar.
 
 ## Plano e acompanhamento
 
 1. **Etapa 1 — auditoria:** concluída; este arquivo registra o estado inicial antes de mudanças no código.
-2. **Etapa 2 — segurança e dados:** pendente; foco em custom claims, aprovação profissional, validação de regras, exclusão de conta, consentimento, App Check e testes no Emulator.
-3. **Etapa 3 — interface:** pendente; tema e componentes reutilizáveis, estados completos, acessibilidade, listas e fluxos de chat/sessão/histórico.
-4. **Etapa 4 — documentação e qualidade:** pendente; README, configuração e execução de verificações, testes e evidências visuais.
+2. **Etapa 2 — segurança e dados:** concluída no código e nos testes; App Check mobile e publicação Firebase estão documentados como dependências externas.
+3. **Etapa 3 — interface:** concluída; tokens/componentes, navegação responsiva, programação semanal, histórico virtualizado, chat com treino anexado e confirmação de saída.
+4. **Etapa 4 — documentação e qualidade:** em conclusão; README, instruções, capturas e verificações estão atualizados.
 
 ## Decisões e dependências externas
 
 - A solução permanece no Firebase (Auth, Firestore e Cloud Functions onde a exclusão segura exigir credenciais administrativas). Nenhuma API própria/Express/MySQL será introduzida.
 - A criação do custom claim e a implantação de regras/functions exigem credenciais administrativas e ação de deploy no projeto Firebase.
-- Capturas de tela precisam ser produzidas após as telas implementadas e executadas em ambiente Expo configurado; não são evidência válida antes da implementação.
+- Capturas responsivas geradas em Expo Web estão em `docs/screenshots/`; os fluxos Firebase e o layout Android ainda requerem teste no build/dispositivo do responsável.
