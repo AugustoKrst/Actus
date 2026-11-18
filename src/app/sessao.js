@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useNavigation, usePreventRemove } from 'expo-router/react-navigation';
 import AppShell from '../components/AppShell';
-import { Card, PageHeading } from '../components/ui';
+import { Button, Card, ConfirmDialog, PageHeading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getCompletedSetIds, getExerciseSetCount, getSavedWorkout, getWorkoutSetIds, saveWorkoutProgress } from '../lib/exercises';
@@ -11,6 +12,7 @@ export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams();
   const { session } = useAuth();
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const s = createStyles(colors);
   const workoutId = Array.isArray(id) ? id[0] : id;
   const [workout, setWorkout] = useState(null);
@@ -18,6 +20,13 @@ export default function WorkoutSessionScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [exitConfirmation, setExitConfirmation] = useState({ visible: false, action: null });
+
+  const totalSets = workout ? getWorkoutSetIds(workout.exercises).length : 0;
+  const allDone = totalSets > 0 && completedSetIds.length === totalSets;
+  usePreventRemove(Boolean(workout && (!allDone || saving)), ({ data }) => {
+    setExitConfirmation({ visible: true, action: data.action });
+  });
 
   useEffect(() => {
     let active = true;
@@ -30,7 +39,7 @@ export default function WorkoutSessionScreen() {
           setCompletedSetIds(getCompletedSetIds(savedWorkout));
         }
       } catch (loadError) {
-        if (active) setError(loadError.message || 'Não foi possível carregar seu treino.');
+        if (active) setError(sessionErrorMessage(loadError, 'carregar'));
       } finally {
         if (active) setLoading(false);
       }
@@ -50,21 +59,24 @@ export default function WorkoutSessionScreen() {
       await saveWorkoutProgress(session.user.uid, workout.id, next, workout.exercises);
       setCompletedSetIds(next);
     } catch (saveError) {
-      setError(saveError.message || 'Não foi possível salvar a série. Tente novamente.');
+      setError(sessionErrorMessage(saveError, 'salvar'));
     } finally {
       setSaving(false);
     }
   }
 
-  const totalSets = workout ? getWorkoutSetIds(workout.exercises).length : 0;
-  const allDone = totalSets > 0 && completedSetIds.length === totalSets;
+  function confirmExit() {
+    const action = exitConfirmation.action;
+    setExitConfirmation({ visible: false, action: null });
+    if (action) navigation.dispatch(action);
+  }
 
   return <AppShell><View style={s.page}>
     <PageHeading eyebrow="SEU MOMENTO DE MOVIMENTO" title={allDone ? 'Treino concluído!' : 'Vamos começar'} description={workout ? `${workout.title} · ${workout.duration} min` : 'Seu treino fica salvo enquanto você faz cada série.'} />
     {loading ? <View style={s.loading}><ActivityIndicator color={colors.green} /><Text style={s.muted}>Carregando seu treino...</Text></View> : error && !workout ? <Card style={s.errorCard}><Text style={s.error}>{error}</Text><Pressable onPress={() => router.replace('/treino')} style={s.secondary}><Text style={s.secondaryText}>Voltar aos treinos</Text></Pressable></Card> : workout ? <>
       <Card style={s.progressCard}>
         <View style={s.progressHeading}><Text style={s.progressLabel}>SEU PROGRESSO</Text><Text style={s.progressCount}>{completedSetIds.length} de {totalSets} séries</Text></View>
-        <View style={s.track}><View style={[s.fill, { width: `${Math.round(completedSetIds.length / totalSets * 100)}%` }]} /></View>
+        <View style={s.track}><View style={[s.fill, { width: `${totalSets ? Math.round(completedSetIds.length / totalSets * 100) : 0}%` }]} /></View>
         {allDone ? <Text style={s.success}>Mandou bem! Você marcou todas as séries.</Text> : <Text style={s.hint}>Marque cada série assim que terminar.</Text>}
       </Card>
 
@@ -95,18 +107,37 @@ export default function WorkoutSessionScreen() {
         </Card>;
       })}</View>
 
-      {!!error && <Text style={s.error}>{error}</Text>}
+      {!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
+      {!allDone ? <Button title="Sair do treino" variant="secondary" onPress={() => router.replace('/treino')} style={s.exitButton} /> : null}
       <Pressable disabled={!allDone || saving} onPress={() => router.replace('/historico')} style={[s.finish, (!allDone || saving) && s.finishDisabled]}>
         <Text style={[s.finishText, !allDone && s.finishTextDisabled]}>{saving ? 'Salvando...' : allDone ? 'Treino salvo · ver histórico  ✓' : 'Marque todas as séries para finalizar'}</Text>
       </Pressable>
     </> : null}
-  </View></AppShell>;
+  </View><ConfirmDialog
+    visible={exitConfirmation.visible}
+    title="Sair do treino?"
+    message="Seu progresso já está salvo. Você pode voltar a este treino pelo histórico quando quiser."
+    confirmLabel="Sair do treino"
+    cancelLabel="Continuar treino"
+    onConfirm={confirmExit}
+    onCancel={() => setExitConfirmation({ visible: false, action: null })}
+    loading={saving}
+  /></AppShell>;
+}
+
+function sessionErrorMessage(error, action) {
+  if (!error?.code) return error?.message || 'Não foi possível concluir esta ação. Tente novamente.';
+  if (error.code === 'permission-denied') return 'O Firebase bloqueou esta ação. Confira se as regras atuais foram publicadas.';
+  if (error.code === 'unavailable' || error.code === 'auth/network-request-failed') return 'Sem conexão com o Firebase. Confira sua internet e tente novamente.';
+  return action === 'carregar'
+    ? 'Não foi possível carregar seu treino. Confira sua conexão e tente novamente.'
+    : 'Não foi possível salvar seu progresso. Confira sua conexão e tente novamente.';
 }
 
 function createStyles(colors) { return StyleSheet.create({
   page: { width: '100%', maxWidth: 920 }, loading: { minHeight: 220, justifyContent: 'center', alignItems: 'center', gap: 12 }, muted: { color: colors.muted, fontSize: 12 },
   progressCard: { padding: 20 }, progressHeading: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, alignItems: 'center' }, progressLabel: { color: colors.green, fontSize: 10, fontWeight: '800', letterSpacing: 1 }, progressCount: { color: colors.ink, fontSize: 12, fontWeight: '700' }, track: { height: 8, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.pale, marginTop: 14 }, fill: { height: 8, borderRadius: 8, backgroundColor: colors.green }, hint: { color: colors.muted, fontSize: 11, marginTop: 11 }, success: { color: colors.green, fontSize: 12, fontWeight: '700', marginTop: 11 },
   list: { gap: 10, marginTop: 15 }, exercise: { padding: 16 }, exerciseContent: { flex: 1 }, exerciseName: { color: colors.ink, fontSize: 13, fontWeight: '700' }, exerciseMeta: { color: colors.muted, fontSize: 10, marginTop: 5 }, instructions: { color: colors.subtle, fontSize: 10, lineHeight: 15, marginTop: 5 }, setList: { gap: 8, marginTop: 13 }, setButton: { minHeight: 46, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }, setButtonDone: { backgroundColor: colors.pale, borderColor: colors.green }, setButtonSaving: { opacity: 0.75 }, checkCircle: { width: 23, height: 23, borderRadius: 12, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' }, checkCircleDone: { backgroundColor: colors.green, borderColor: colors.green }, checkMark: { color: 'transparent', fontSize: 14, fontWeight: '800' }, checkMarkDone: { color: 'white' }, setText: { color: colors.ink, fontSize: 12, fontWeight: '600' }, setTextDone: { color: colors.green },
-  finish: { minHeight: 49, borderRadius: 10, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginTop: 17, paddingHorizontal: 14 }, finishDisabled: { backgroundColor: colors.pale }, finishText: { color: 'white', fontWeight: '700', fontSize: 12, textAlign: 'center' }, finishTextDisabled: { color: colors.muted },
+  exitButton: { alignSelf: 'flex-start', marginTop: 10 }, finish: { minHeight: 49, borderRadius: 10, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginTop: 17, paddingHorizontal: 14 }, finishDisabled: { backgroundColor: colors.pale }, finishText: { color: 'white', fontWeight: '700', fontSize: 12, textAlign: 'center' }, finishTextDisabled: { color: colors.muted },
   errorCard: { padding: 20 }, error: { color: colors.red, fontSize: 12, marginTop: 10 }, secondary: { minHeight: 42, justifyContent: 'center', alignItems: 'center', marginTop: 14, borderRadius: 9, backgroundColor: colors.pale }, secondaryText: { color: colors.green, fontSize: 12, fontWeight: '700' },
 }); }

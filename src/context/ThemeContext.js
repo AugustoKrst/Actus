@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { palettes } from '../lib/theme';
+import { designTokens, palettes } from '../theme';
 
 const ThemeContext = createContext(null);
 const STORAGE_KEY = 'actus-theme';
@@ -24,8 +24,8 @@ export function ThemeProvider({ children }) {
     try { await AsyncStorage.setItem(STORAGE_KEY, nextMode); } catch {}
   }, [mode]);
 
-  const value = useMemo(() => ({ mode, colors: palettes[mode], toggleMode, ready }), [mode, ready, toggleMode]);
+  const value = useMemo(() => ({ mode, colors: palettes[mode], tokens: designTokens, toggleMode, ready }), [mode, ready, toggleMode]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
-export function useTheme() { return useContext(ThemeContext) || { mode: 'light', colors: palettes.light, toggleMode: () => {} }; }
+export function useTheme() { return useContext(ThemeContext) || { mode: 'light', colors: palettes.light, tokens: designTokens, toggleMode: () => {} }; }

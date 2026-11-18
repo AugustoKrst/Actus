@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { missingConfig } from '../lib/firebaseConfig';
 import { useTheme } from '../context/ThemeContext';
@@ -6,12 +7,13 @@ import { useTheme } from '../context/ThemeContext';
 export default function FirebaseSetupScreen() {
   const { colors } = useTheme(); const s = createStyles(colors);
   return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.page}><View style={s.card}>
-    <View style={s.logo}><Text style={s.logoMark}>✳</Text><Text style={s.logoText}>Actus</Text></View>
+    <View style={s.logo}><Feather name="activity" size={24} color={colors.green} accessibilityElementsHidden importantForAccessibility="no" /><Text style={s.logoText}>Actus</Text></View>
     <Text style={s.eyebrow}>CONFIGURAÇÃO NECESSÁRIA</Text>
     <Text style={s.title}>Conecte seu projeto Firebase</Text>
     <Text style={s.body}>O app abriu, mas ainda não recebeu as credenciais do Firebase. Configure o arquivo local <Text style={s.code}>.env</Text> para ativar login e salvar seus treinos.</Text>
     <Text style={s.section}>1. Crie o arquivo de configuração</Text>
-    <Text style={s.codeBlock}>Copy-Item .env.example .env</Text>
+    <Text style={s.codeBlock}>PowerShell: Copy-Item .env.example .env</Text>
+    <Text style={s.codeBlock}>macOS/Linux: cp .env.example .env</Text>
     <Text style={s.section}>2. Copie os valores do Firebase Console</Text>
     <Text style={s.body}>Abra Configurações do projeto → Geral → Seus apps → app Web → Configuração do SDK. Cole os valores reais no arquivo .env:</Text>
     <View style={s.keys}>{missingConfig.map((key) => <Text key={key} style={s.key}>•  {key}</Text>)}</View>

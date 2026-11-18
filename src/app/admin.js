@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import AppShell from '../components/AppShell';
-import { Card, PageHeading } from '../components/ui';
+import { Card, ConfirmDialog, PageHeading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { deleteExercise, listExercises, listProfessionalsByVerification, listRegisteredUsers, saveExercise, setProfessionalVerification } from '../lib/exercises';
@@ -37,6 +37,8 @@ export default function AdminScreen() {
   const [professionalsLoading, setProfessionalsLoading] = useState(false);
   const [professionalsError, setProfessionalsError] = useState('');
   const [updatingProfessionalId, setUpdatingProfessionalId] = useState(null);
+  const [exerciseToRemove, setExerciseToRemove] = useState(null);
+  const [removingExercise, setRemovingExercise] = useState(false);
 
   const loadExercises = useCallback(async () => {
     try {
@@ -45,7 +47,7 @@ export default function AdminScreen() {
     } catch (loadError) {
       setError(loadError.code === 'permission-denied'
         ? 'Publique as regras atualizadas do Firestore para administrar o catálogo.'
-        : loadError.message);
+        : 'Não foi possível carregar o catálogo de exercícios. Tente novamente.');
     }
   }, []);
 
@@ -60,7 +62,7 @@ export default function AdminScreen() {
     } catch (loadError) {
       setAccountsError(loadError.code === 'permission-denied'
         ? 'Publique as regras atualizadas do Firestore para consultar as contas.'
-        : loadError.message);
+        : 'Não foi possível carregar as contas. Tente novamente.');
     } finally {
       setAccountsLoading(false);
     }
@@ -117,7 +119,7 @@ export default function AdminScreen() {
     } catch (saveError) {
       setError(saveError.code === 'permission-denied'
         ? 'A gravação foi bloqueada pelas regras do Firestore. Publique firestore.rules.'
-        : saveError.message);
+        : 'Não foi possível salvar o exercício. Confira os dados e tente novamente.');
     }
   }
 
@@ -133,15 +135,17 @@ export default function AdminScreen() {
   }
 
   async function remove(exerciseId) {
+    setRemovingExercise(true);
     setError('');
     try {
       await deleteExercise(exerciseId);
+      setExerciseToRemove(null);
       await loadExercises();
     } catch (deleteError) {
       setError(deleteError.code === 'permission-denied'
         ? 'A exclusão foi bloqueada pelas regras do Firestore. Publique firestore.rules.'
-        : deleteError.message);
-    }
+        : 'Não foi possível excluir o exercício. Tente novamente.');
+    } finally { setRemovingExercise(false); }
   }
 
   async function changeProfessionalVerification(professional, verified) {
@@ -209,7 +213,7 @@ export default function AdminScreen() {
       {items.length === 0 ? <Text style={s.muted}>Nenhum exercício cadastrado.</Text> : items.map((item) => <View key={item.id} style={s.exerciseRow}>
         <View style={s.rowCopy}><Text style={s.rowTitle}>{item.name}</Text><Text style={s.muted}>{item.muscle} · nível {item.level}</Text></View>
         <Pressable onPress={() => edit(item)} style={s.smallButton} accessibilityRole="button"><Text style={s.primaryText}>Editar</Text></Pressable>
-        <Pressable onPress={() => remove(item.id)} style={s.deleteButton} accessibilityRole="button"><Text style={s.deleteText}>Excluir</Text></Pressable>
+        <Pressable onPress={() => setExerciseToRemove(item)} style={s.deleteButton} accessibilityRole="button" accessibilityLabel={`Excluir exercício ${item.name}`}><Text style={s.deleteText}>Excluir</Text></Pressable>
       </View>)}
     </Card>
 
@@ -229,7 +233,7 @@ export default function AdminScreen() {
       {accountsLoading && accounts.length > 0 && <View style={s.loading}><ActivityIndicator color={colors.green} /><Text style={s.muted}>Carregando mais contas...</Text></View>}
       {accountsHaveMore && !accountsLoading && <Pressable onPress={() => loadAccounts(accountsCursor, true)} style={s.moreButton} accessibilityRole="button"><Text style={s.cancelText}>Carregar mais contas</Text></Pressable>}
     </Card>
-  </View></AppShell>;
+  </View><ConfirmDialog visible={Boolean(exerciseToRemove)} title="Excluir este exercício?" message={exerciseToRemove ? `“${exerciseToRemove.name}” será removido do catálogo. Essa ação não pode ser desfeita.` : ''} confirmLabel="Excluir exercício" cancelLabel="Manter exercício" destructive loading={removingExercise} onConfirm={() => exerciseToRemove && remove(exerciseToRemove.id)} onCancel={() => { if (!removingExercise) setExerciseToRemove(null); }} /></AppShell>;
 }
 
 function createStyles(colors) { return StyleSheet.create({

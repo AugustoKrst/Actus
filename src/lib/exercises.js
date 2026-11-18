@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, documentId, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, startAfter, updateDoc } from 'firebase/firestore';
+import { addDoc, average, collection, count, deleteDoc, doc, documentId, getAggregateFromServer, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, startAfter, updateDoc, where } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
 export const defaultExercises = [
@@ -105,16 +105,26 @@ export async function getSavedWorkout(uid, workoutId) {
   return { id: snapshot.id, ...snapshot.data() };
 }
 
-export async function listCompletedWorkouts(uid) {
-  const snapshot = await getDocs(collection(db, 'users', uid, 'workouts'));
-  return snapshot.docs
-    .map((workoutDoc) => ({ id: workoutDoc.id, ...workoutDoc.data() }))
-    .filter((workout) => workout.completedAt)
-    .sort((first, second) => {
-      const firstDate = first.completedAt?.toMillis?.() || 0;
-      const secondDate = second.completedAt?.toMillis?.() || 0;
-      return secondDate - firstDate;
-    });
+const HISTORY_PAGE_SIZE = 30;
+
+export async function listCompletedWorkouts(uid, cursor = null) {
+  const workoutsRef = collection(db, 'users', uid, 'workouts');
+  const completedQuery = query(workoutsRef, where('completedAt', '!=', null));
+  const orderedQuery = query(completedQuery, orderBy('completedAt', 'desc'));
+  const pageQuery = query(orderedQuery, ...(cursor ? [startAfter(cursor)] : []), limit(HISTORY_PAGE_SIZE));
+  const [snapshot, aggregate] = await Promise.all([
+    getDocs(pageQuery),
+    getAggregateFromServer(completedQuery, { total: count(), averageDuration: average('duration') }),
+  ]);
+  const lastDocument = snapshot.docs[snapshot.docs.length - 1] || cursor;
+  const metrics = aggregate.data();
+  return {
+    workouts: snapshot.docs.map((workoutDoc) => ({ id: workoutDoc.id, ...workoutDoc.data() })),
+    cursor: lastDocument,
+    hasMore: snapshot.size === HISTORY_PAGE_SIZE,
+    totalCount: metrics.total,
+    averageDuration: metrics.averageDuration == null ? 0 : Math.round(metrics.averageDuration),
+  };
 }
 
 export function getExerciseSetCount(exercise) {
