@@ -6,6 +6,10 @@ Aplicativo mobile de bem-estar e atividade física. O Actus ajuda pessoas a come
 
 A falta de tempo, equipamento ou orientação pode dificultar a prática regular de atividade física. O Actus organiza treinos simples e adaptáveis e permite acompanhar o progresso e consultar sessões concluídas.
 
+## Apresentação
+
+[Abrir a apresentação do Actus no Canva](https://canva.link/hh1kfbwteh5j33i)
+
 ## Funcionalidades
 
 - Cadastro, login e logout com e-mail e senha.
