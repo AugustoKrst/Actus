@@ -85,7 +85,7 @@ export const space = {
   xxxl: 48,
 };
 
-export const radius = { xs: 8, sm: 12, md: 16, lg: 16, xl: 24, pill: 999 };
+export const radius = { none: 0, xxs: 4, xs: 8, sm: 12, md: 16, lg: 16, xl: 24, pill: 999 };
 
 export const type = {
   family: {
@@ -94,7 +94,8 @@ export const type = {
     semibold: 'InterSemiBold',
     bold: 'InterBold',
   },
-  size: { label: 10, caption: 12, body: 15, subtitle: 18, title: 24, display: 34 },
+  size: { label: 10, caption: 12, body: 15, subtitle: 18, title: 24, display: 34, hero: 46 },
+  lineHeight: { label: 14, caption: 18, body: 23, subtitle: 27, title: 32, display: 40, hero: 54 },
   weight: { regular: '400', medium: '500', semibold: '600', bold: '700' },
   caption: 12,
   small: 14,

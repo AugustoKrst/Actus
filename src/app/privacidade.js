@@ -1,3 +1,4 @@
+import { designTokens } from '../theme';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AppText as Text, Card, PageHeading } from '../components/ui';
 import { router } from 'expo-router';
@@ -32,6 +33,6 @@ export default function PrivacyScreen() {
   </ScrollView></SafeAreaView>;
 }
 
-function createStyles(colors) { return StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.canvas }, content: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 20, paddingBottom: 32 }, page: { width: '100%', maxWidth: 900, paddingTop: 18 }, back: { minHeight: 48, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 8 }, backText: { color: colors.green, fontSize: 13, fontWeight: '700' }, card: { padding: 24 }, version: { color: colors.green, fontSize: 11, fontWeight: '800' }, intro: { color: colors.muted, fontSize: 13, lineHeight: 21, marginTop: 10 }, section: { borderTopWidth: 1, borderColor: colors.line, paddingTop: 17, marginTop: 17 }, title: { color: colors.ink, fontSize: 14, fontWeight: '800' }, body: { color: colors.muted, fontSize: 12, lineHeight: 19, marginTop: 6 }, contactNote: { color: colors.subtle, fontSize: 10, lineHeight: 16, paddingTop: 15, marginTop: 17, borderTopWidth: 1, borderColor: colors.line },
+function createStyles(colors) { const { space, type } = designTokens; return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.canvas }, content: { flexGrow: 1, alignItems: 'center', paddingHorizontal: space.md + 4, paddingBottom: space.xxl }, page: { width: '100%', maxWidth: 900, paddingTop: space.md + 2 }, back: { minHeight: 48, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: space.xs }, backText: { color: colors.green, fontSize: type.size.caption + 1, fontWeight: '700' }, card: { padding: space.xl }, version: { color: colors.green, fontSize: type.size.label + 1, fontWeight: '800' }, intro: { color: colors.muted, fontSize: type.size.caption + 1, lineHeight: type.lineHeight.body - 2, marginTop: space.xs + 2 }, section: { borderTopWidth: 1, borderColor: colors.line, paddingTop: space.md + 1, marginTop: space.md + 1 }, title: { color: colors.ink, fontSize: type.size.body - 1, fontWeight: '800' }, body: { color: colors.muted, fontSize: type.size.caption, lineHeight: type.lineHeight.caption + 1, marginTop: space.xxs + 2 }, contactNote: { color: colors.subtle, fontSize: type.size.label, lineHeight: type.lineHeight.label + 2, paddingTop: space.md - 1, marginTop: space.md + 1, borderTopWidth: 1, borderColor: colors.line },
 }); }

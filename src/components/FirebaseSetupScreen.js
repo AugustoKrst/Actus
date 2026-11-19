@@ -1,3 +1,4 @@
+import { designTokens } from '../theme';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppText as Text } from './ui';
 import { Feather } from '@expo/vector-icons';
@@ -24,20 +25,20 @@ export default function FirebaseSetupScreen() {
   </View></ScrollView></SafeAreaView>;
 }
 
-function createStyles(colors) { return StyleSheet.create({
+function createStyles(colors) { const { space, radius, type } = designTokens; return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.canvas },
-  page: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  card: { width: '100%', maxWidth: 620, padding: 28, borderRadius: 18, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
-  logo: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 30 },
-  logoMark: { color: colors.green, fontSize: 24 },
-  logoText: { color: colors.ink, fontSize: 21, fontWeight: '800' },
-  eyebrow: { color: colors.green, fontWeight: '800', letterSpacing: 1.4, fontSize: 10 },
-  title: { color: colors.ink, fontSize: 27, fontWeight: '700', marginTop: 8 },
-  body: { color: colors.muted, fontSize: 13, lineHeight: 21, marginTop: 10 },
+  page: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: space.md + 4 },
+  card: { width: '100%', maxWidth: 620, padding: space.xl + 4, borderRadius: radius.md + 2, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
+  logo: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginBottom: space.xxl - 2 },
+  logoMark: { color: colors.green, fontSize: type.size.title },
+  logoText: { color: colors.ink, fontSize: type.size.subtitle + 3, fontWeight: '800' },
+  eyebrow: { color: colors.green, fontWeight: '800', letterSpacing: 1.4, fontSize: type.size.label },
+  title: { color: colors.ink, fontSize: type.size.title + 3, fontWeight: '700', marginTop: space.xs },
+  body: { color: colors.muted, fontSize: type.size.caption + 1, lineHeight: type.lineHeight.body - 2, marginTop: space.xs + 2 },
   code: { color: colors.dark, fontWeight: '700' },
-  section: { color: colors.ink, fontSize: 13, fontWeight: '700', marginTop: 23, marginBottom: 9 },
-  codeBlock: { color: colors.dark, backgroundColor: colors.pale, borderRadius: 8, padding: 12, fontSize: 12, fontFamily: 'monospace' },
-  keys: { backgroundColor: colors.field, borderColor: colors.line, borderWidth: 1, borderRadius: 8, padding: 12, marginTop: 10, gap: 6 },
-  key: { color: colors.muted, fontFamily: 'monospace', fontSize: 10 },
-  note: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 20 },
+  section: { color: colors.ink, fontSize: type.size.caption + 1, fontWeight: '700', marginTop: space.xl - 1, marginBottom: space.xs + 1 },
+  codeBlock: { color: colors.dark, backgroundColor: colors.pale, borderRadius: radius.xs, padding: space.sm, fontSize: type.size.caption, fontFamily: 'monospace' },
+  keys: { backgroundColor: colors.field, borderColor: colors.line, borderWidth: 1, borderRadius: radius.xs, padding: space.sm, marginTop: space.xs + 2, gap: space.xxs + 2 },
+  key: { color: colors.muted, fontFamily: 'monospace', fontSize: type.size.label },
+  note: { color: colors.muted, fontSize: type.size.label + 1, lineHeight: type.lineHeight.caption - 1, marginTop: space.md + 4 },
 }); }

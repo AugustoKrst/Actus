@@ -1,3 +1,4 @@
+import { designTokens } from '../theme';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText as Text, Card, PageHeading, SectionTitle } from '../components/ui';
 import { router } from 'expo-router';
@@ -31,11 +32,11 @@ export default function SettingsScreen() {
   </View></AppShell>;
 }
 
-function createStyles(colors) { return StyleSheet.create({
-  page: { width: '100%', maxWidth: 1120 }, card: { width: '100%', maxWidth: 690, padding: 24 },
-  themeTitle: { color: colors.ink, fontSize: 14, fontWeight: '700' }, themeDescription: { color: colors.muted, fontSize: 11, marginTop: 5 },
-  modeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
-  modeOption: { minHeight: 48, minWidth: 88, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.field },
+function createStyles(colors) { const { space, radius, type } = designTokens; return StyleSheet.create({
+  page: { width: '100%', maxWidth: 1120 }, card: { width: '100%', maxWidth: 690, padding: space.xl },
+  themeTitle: { color: colors.ink, fontSize: type.size.body - 1, fontWeight: '700' }, themeDescription: { color: colors.muted, fontSize: type.size.label + 1, marginTop: space.xxs + 1 },
+  modeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.md },
+  modeOption: { minHeight: 48, minWidth: 88, paddingHorizontal: space.md, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.field },
   modeOptionSelected: { borderColor: colors.green, backgroundColor: colors.pale },
-  themeButtonText: { color: colors.muted, fontSize: 12, fontWeight: '700' }, themeButtonTextSelected: { color: colors.green },
+  themeButtonText: { color: colors.muted, fontSize: type.size.caption, fontWeight: '700' }, themeButtonTextSelected: { color: colors.green },
 }); }
