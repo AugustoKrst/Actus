@@ -433,7 +433,9 @@ service cloud.firestore {
         && request.resource.data.place.size() <= 40
           && request.resource.data.equipment is list
         && validEquipment(request.resource.data.equipment)
-        && validExerciseList(request.resource.data.exercises)
+          && request.resource.data.exercises is list
+          && request.resource.data.exercises.size() >= 1
+          && request.resource.data.exercises.size() <= 20
           && request.resource.data.completedExerciseIds is list
           && request.resource.data.completedExerciseIds.size() == 0
           && request.resource.data.completedSetIds is list
