@@ -1,8 +1,8 @@
 import { designTokens } from '../theme';
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { AppText as Text, AppTextInput as TextInput, Card, Chip, SectionTitle } from './ui';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { AppText as Text, AppTextInput as TextInput, Avatar, Button, Card, Chip, SectionTitle } from './ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { deleteMyAccount } from '../lib/account';
@@ -56,6 +56,7 @@ function ProfileEditorForm({ session, updateUser }) {
 
   return <Card style={s.card}>
     <SectionTitle title="Seu perfil" caption="Seus dados pessoais" />
+    <View style={s.identity}><Avatar name={name || session.user.name} size="large" /><View style={s.identityCopy}><Text style={s.identityName}>{name || session.user.name}</Text><Text style={s.identityEmail}>{session.user.email}</Text></View></View>
     <Text style={s.label}>NOME</Text>
     <TextInput value={name} onChangeText={setName} style={s.input} placeholder="Seu nome" placeholderTextColor={colors.muted} />
     <Text style={s.label}>E-MAIL</Text>
@@ -71,9 +72,7 @@ function ProfileEditorForm({ session, updateUser }) {
     <View style={s.wrap}>{goals.map((item) => <Chip key={item} label={item} selected={goal === item} onPress={() => setGoal(item)} />)}</View>
     {!!message && <Text style={s.success}>{message}</Text>}
     {!!error && <Text style={s.error}>{error}</Text>}
-    <Pressable style={[s.button, loading && s.buttonDisabled]} disabled={loading} onPress={save} accessibilityRole="button">
-      {loading ? <ActivityIndicator color="white" /> : <Text style={s.buttonText}>Salvar alterações</Text>}
-    </Pressable>
+    <Button title="Salvar alterações" loading={loading} onPress={save} style={s.button} />
     <View style={s.dangerZone}>
       <Text style={s.dangerTitle}>Excluir minha conta</Text>
       <Text style={s.helper}>A exclusão remove seu perfil, seus treinos e suas conversas. Esta ação não pode ser desfeita.</Text>
@@ -89,8 +88,8 @@ function ProfileEditorForm({ session, updateUser }) {
 }
 
 function createStyles(colors) { const { space, radius, type } = designTokens; return StyleSheet.create({
-  card: { maxWidth: 690, padding: space.xl }, label: { color: colors.subtle, fontSize: type.size.label - 1, letterSpacing: 1.1, fontWeight: '800', marginTop: space.xl - 1, marginBottom: space.xs + 1 },
+  card: { maxWidth: 690, padding: space.xl }, identity: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs, marginBottom: space.xs }, identityCopy: { flex: 1, minWidth: 0 }, identityName: { color: colors.ink, fontSize: type.size.subtitle, fontWeight: '800' }, identityEmail: { color: colors.muted, fontSize: type.size.caption, marginTop: space.xxs }, label: { color: colors.subtle, fontSize: type.size.label - 1, letterSpacing: 1.1, fontWeight: '800', marginTop: space.xl - 1, marginBottom: space.xs + 1 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.line, borderRadius: radius.xs + 1, paddingHorizontal: space.sm + 1, color: colors.ink, fontSize: type.size.caption + 1, backgroundColor: colors.field, justifyContent: 'center' }, readonly: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, readonlyText: { color: colors.ink, fontSize: type.size.caption + 1 }, verified: { color: colors.green, fontSize: type.size.label, fontWeight: '700' }, pending: { color: colors.orange, fontSize: type.size.label, fontWeight: '700' }, helper: { color: colors.muted, fontSize: type.size.label + 1, lineHeight: type.lineHeight.label + 2, marginTop: space.xs }, wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-  button: { minHeight: 48, borderRadius: radius.xs + 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green, marginTop: space.xl + 1 }, buttonDisabled: { opacity: 0.55 }, buttonText: { color: colors.textOnPrimary, fontSize: type.size.caption, fontWeight: '700' }, success: { color: colors.green, fontSize: type.size.caption, marginTop: space.sm + 2 }, error: { color: colors.red, fontSize: type.size.caption, marginTop: space.sm + 2 },
+  button: { marginTop: space.xl + 1 }, success: { color: colors.green, fontSize: type.size.caption, marginTop: space.sm + 2 }, error: { color: colors.red, fontSize: type.size.caption, marginTop: space.sm + 2 },
   dangerZone: { borderTopWidth: 1, borderColor: colors.line, paddingTop: space.md + 4, marginTop: space.xl + 3 }, dangerTitle: { color: colors.red, fontSize: type.size.body - 1, fontWeight: '800' }, deleteButton: { minHeight: 48, paddingHorizontal: space.sm + 2, alignItems: 'center', justifyContent: 'center', borderRadius: radius.xs + 1, backgroundColor: colors.red }, deleteButtonText: { color: colors.textOnPrimary, fontSize: type.size.label + 1, fontWeight: '800' }, deleteActions: { flexDirection: 'row', gap: space.xs + 1, marginTop: space.xs + 2 }, cancelButton: { minHeight: 48, paddingHorizontal: space.md, alignItems: 'center', justifyContent: 'center', borderRadius: radius.xs + 1, backgroundColor: colors.pale }, cancelText: { color: colors.green, fontSize: type.size.label + 1, fontWeight: '800' },
 }); }

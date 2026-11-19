@@ -2,7 +2,7 @@ import { designTokens } from '../theme';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { AppText as Text, AppTextInput as TextInput, Button, Card, LoadingState, PageHeading } from './ui';
+import { AppText as Text, AppTextInput as TextInput, Avatar, Button, Card, LoadingState, PageHeading } from './ui';
 import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -302,7 +302,7 @@ export default function ConversationCenter({ mode }) {
       const hasConversation = conversations.some((conversation) => conversation.professionalId === item.id.replace('professional-', ''));
       return <Pressable onPress={() => chooseProfessional({ ...item, id: item.id.replace('professional-', '') })} accessibilityRole="button" accessibilityLabel={(item.name || 'Profissional') + ', abrir contato'} style={styles.directoryPressable}>
         <Card style={styles.professionalCard}>
-          <View style={styles.professionalTop}><View style={styles.largeAvatar}><Text style={styles.largeAvatarText}>{(item.name || '?').slice(0, 1).toUpperCase()}</Text></View><View style={styles.availability}><View style={styles.availabilityDot} /><Text style={styles.availabilityText}>Disponível</Text></View></View>
+          <View style={styles.professionalTop}><Avatar name={item.name || 'Profissional'} size="large" /><View style={styles.availability}><View style={styles.availabilityDot} /><Text style={styles.availabilityText}>Disponível</Text></View></View>
           <Text style={styles.professionalName}>{item.name || 'Profissional de saúde'}</Text>
           <Text style={styles.professionalCaption}>Profissional de saúde · Registro conferido</Text>
           <View style={styles.profileAction}><Text style={styles.profileActionText}>{hasConversation ? 'Abrir conversa' : 'Enviar mensagem'}</Text><Feather name="chevron-right" size={18} color={colors.green} accessibilityElementsHidden importantForAccessibility="no" /></View>
@@ -313,7 +313,7 @@ export default function ConversationCenter({ mode }) {
     if (!conversation) return null;
     const name = isProfessional ? conversation.studentName : conversation.professionalName;
     return <Pressable onPress={() => { setMessagesLoading(true); setSelected(conversation); setError(''); }} accessibilityRole="button" accessibilityLabel={'Abrir conversa com ' + (name || otherPartyLabel)} style={styles.directoryPressable}>
-      <Card style={styles.conversationCard}><View style={styles.avatar}><Text style={styles.avatarText}>{(name || '?').slice(0, 1).toUpperCase()}</Text></View><View style={styles.conversationCopy}><Text style={styles.personName}>{name || otherPartyLabel}</Text><Text style={styles.helper}>{isProfessional ? 'Aluno que entrou em contato' : 'Toque para continuar a conversa'}</Text></View><Feather name="chevron-right" size={18} color={colors.green} accessibilityElementsHidden importantForAccessibility="no" /></Card>
+      <Card style={styles.conversationCard}><Avatar name={name || otherPartyLabel} size="small" /><View style={styles.conversationCopy}><Text style={styles.personName}>{name || otherPartyLabel}</Text><Text style={styles.helper}>{isProfessional ? 'Aluno que entrou em contato' : 'Toque para continuar a conversa'}</Text></View><Feather name="chevron-right" size={18} color={colors.green} accessibilityElementsHidden importantForAccessibility="no" /></Card>
     </Pressable>;
   };
 

@@ -1,7 +1,7 @@
 import { designTokens } from '../theme';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { AppText as Text, AppTextInput as TextInput, Card, ConfirmDialog, PageHeading } from '../components/ui';
+import { AppText as Text, AppTextInput as TextInput, Card, ConfirmDialog, PageHeading, Tag } from '../components/ui';
 import { router, useFocusEffect } from 'expo-router';
 import AppShell from '../components/AppShell';
 import { useAuth } from '../context/AuthContext';
@@ -174,7 +174,7 @@ export default function AdminScreen() {
         : pendingProfessionals.length === 0
           ? (professionalsError ? null : <Text style={s.empty}>Não há profissionais aguardando aprovação.</Text>)
           : pendingProfessionals.map((professional) => <View key={professional.id} style={s.professionalRow}>
-            <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View>
+            <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View><Tag label="Pendente" tone="warning" />
             <Pressable onPress={() => changeProfessionalVerification(professional, true)} disabled={updatingProfessionalId === professional.id} style={s.approveButton} accessibilityRole="button" accessibilityLabel={`Aprovar ${professional.name}`}><Text style={s.approveText}>{updatingProfessionalId === professional.id ? 'Salvando...' : 'Aprovar'}</Text></Pressable>
           </View>)}
       {professionalsError && <Pressable onPress={loadProfessionals} style={s.moreButton} accessibilityRole="button"><Text style={s.cancelText}>Tentar novamente</Text></Pressable>}
@@ -185,7 +185,7 @@ export default function AdminScreen() {
       {verifiedProfessionals.length === 0 && !professionalsLoading
         ? <Text style={s.empty}>Nenhum profissional aprovado por enquanto.</Text>
         : verifiedProfessionals.map((professional) => <View key={professional.id} style={s.professionalRow}>
-          <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View>
+          <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View><Tag label="Verificado" tone="success" />
           <Pressable onPress={() => changeProfessionalVerification(professional, false)} disabled={updatingProfessionalId === professional.id} style={s.revokeButton} accessibilityRole="button" accessibilityLabel={`Revogar verificação de ${professional.name}`}><Text style={s.revokeText}>{updatingProfessionalId === professional.id ? 'Salvando...' : 'Revogar'}</Text></Pressable>
         </View>)}
     </Card>
@@ -242,6 +242,6 @@ function createStyles(colors) { const { space, radius, type } = designTokens; re
   input: { minHeight: 44, borderWidth: 1, borderColor: colors.line, borderRadius: radius.xs, paddingHorizontal: space.sm, paddingVertical: space.xs + 1, color: colors.ink, marginBottom: space.xs + 1 }, multiline: { minHeight: 80, textAlignVertical: 'top' },
   primaryButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: radius.xs + 1, backgroundColor: colors.green, marginTop: space.xxs, paddingHorizontal: space.sm + 2 }, primaryText: { color: colors.textOnPrimary, fontSize: type.size.label + 1, fontWeight: '700' }, cancelButton: { padding: space.sm, alignItems: 'center' }, cancelText: { color: colors.green, fontSize: type.size.label + 1, fontWeight: '700' },
   exerciseRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: space.xs + 1, borderTopWidth: 1, borderColor: colors.line, paddingVertical: space.xs }, rowCopy: { flex: 1 }, rowTitle: { color: colors.ink, fontSize: type.size.caption, fontWeight: '700' }, smallButton: { paddingHorizontal: space.sm - 1, paddingVertical: space.xs + 1, borderRadius: radius.xs, backgroundColor: colors.green }, deleteButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: space.xxs + 1 }, deleteText: { color: colors.red, fontSize: type.size.label, fontWeight: '700' },
-  professionalRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: space.xs + 2, borderTopWidth: 1, borderColor: colors.line, paddingVertical: space.xs + 2 }, approveButton: { minHeight: 44, paddingHorizontal: space.sm + 2, borderRadius: radius.xs + 1, justifyContent: 'center', backgroundColor: colors.green }, approveText: { color: colors.textOnPrimary, fontSize: type.size.label + 1, fontWeight: '800' }, revokeButton: { minHeight: 44, paddingHorizontal: space.sm + 2, borderRadius: radius.xs + 1, justifyContent: 'center', backgroundColor: colors.soft }, revokeText: { color: colors.red, fontSize: type.size.label + 1, fontWeight: '800' },
+  professionalRow: { minHeight: 68, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.xs + 2, borderTopWidth: 1, borderColor: colors.line, paddingVertical: space.xs + 2 }, approveButton: { minHeight: 44, paddingHorizontal: space.sm + 2, borderRadius: radius.xs + 1, justifyContent: 'center', backgroundColor: colors.green }, approveText: { color: colors.textOnPrimary, fontSize: type.size.label + 1, fontWeight: '800' }, revokeButton: { minHeight: 44, paddingHorizontal: space.sm + 2, borderRadius: radius.xs + 1, justifyContent: 'center', backgroundColor: colors.soft }, revokeText: { color: colors.red, fontSize: type.size.label + 1, fontWeight: '800' },
   accountRow: { borderTopWidth: 1, borderColor: colors.line, paddingVertical: space.sm, gap: space.xxs }, accountEmail: { color: colors.green, fontSize: type.size.label + 1 }, muted: { color: colors.muted, fontSize: type.size.label, marginTop: space.xxs - 1 }, error: { color: colors.red, fontSize: type.size.label + 1, marginTop: space.xs }, empty: { color: colors.muted, fontSize: type.size.label + 1, marginTop: space.sm + 2 }, loading: { minHeight: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs + 2 }, moreButton: { minHeight: 44, borderRadius: radius.xs + 1, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginTop: space.sm },
 }); }

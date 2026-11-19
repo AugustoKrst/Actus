@@ -5,14 +5,17 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppShell from '../components/AppShell';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function HomeScreen() {
+  const { session } = useAuth();
   const { colors, tokens } = useTheme();
   const s = createStyles(colors, tokens);
   const compact = useWindowDimensions().width <= 700;
+  const firstName = session?.user?.name?.trim().split(/\s+/)[0];
 
   return <AppShell><View style={s.page}>
-    <PageHeading eyebrow="SEU ESPAÇO DE MOVIMENTO" title="Um passo de cada vez." description="Cuide do seu corpo com treinos que cabem na sua rotina." />
+    <PageHeading eyebrow="SEU ESPAÇO DE MOVIMENTO" title={firstName ? `Olá, ${firstName}.` : 'Um passo de cada vez.'} description="Cuide do seu corpo com treinos que cabem na sua rotina." />
 
     <View style={[s.hero, compact && s.heroCompact]}>
       <LinearGradient colors={[colors.heroStart, colors.heroEnd]} style={s.heroGradient} />
