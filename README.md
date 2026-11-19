@@ -70,19 +70,36 @@ O CRUD de treinos inclui criação, leitura, atualização do progresso e exclus
 
 O profissional se cadastra com o número de registro e aguarda aprovação administrativa. Só perfis verificados aparecem em **Profissionais** e podem iniciar atendimentos. O usuário escolhe um profissional; o app cria uma conversa e grava a primeira mensagem. As telas **Profissionais** e **Atendimentos** escutam as conversas e mensagens em tempo real. Cada conversa tem um aluno e um profissional; as regras permitem leitura e envio somente a esses dois participantes. Na conversa, o profissional pode alternar entre texto e **Enviar treino**, escolher exercícios, nível e duração e anexar o plano. O aluno pode abrir o treino, que é salvo na conta dele antes de iniciar. Depois de publicar as regras, profissionais que já estavam cadastrados devem entrar novamente para sincronizar seu perfil no diretório.
 
-## Capturas de tela
+## Apresentação e capturas — Entrega 4
 
-Capturas responsivas das telas implementadas:
+As imagens abaixo registram telas reais do Actus e ajudam a apresentar a solução. O PDF da avaliação também pede demonstrações de autenticação, níveis de acesso, CRUD, banco de dados, repositório e APK; o roteiro após as imagens relaciona cada tópico à tela ou evidência correspondente.
 
-| Entrada no desktop | Início no desktop |
+| Login no desktop — entrada para cadastro e autenticação | Início no desktop — proposta e solução do Actus |
 | --- | --- |
-| ![Tela de entrada no desktop](docs/screenshots/actus-login-desktop.png) | ![Tela inicial no desktop](docs/screenshots/actus-home-desktop.png) |
+| ![Tela de login do Actus no desktop, com acesso ao cadastro](docs/screenshots/actus-login-desktop.png) | ![Tela inicial do Actus no desktop](docs/screenshots/actus-home-desktop.png) |
 
-| Entrada no celular | Montador de treino no celular |
+| Login no celular — fluxo de autenticação mobile | Montador no celular — criação e leitura de treino |
 | --- | --- |
-| ![Tela de entrada no celular](docs/screenshots/actus-login-mobile.png) | ![Montador de treino no celular](docs/screenshots/actus-builder-mobile.png) |
+| ![Tela de login do Actus em formato mobile](docs/screenshots/actus-login-mobile.png) | ![Tela de montagem de treino em formato mobile](docs/screenshots/actus-builder-mobile.png) |
 
-As imagens não contêm dados pessoais. A validação de fluxos que dependem de Firebase requer projeto configurado e conta de teste.
+| Login no desktop — tema escuro do sistema |
+| --- |
+| ![Tela de login do Actus no desktop com tema escuro](docs/screenshots/actus-login-current-desktop.png) |
+
+### Roteiro de demonstração
+
+| Requisito da apresentação | Evidência no projeto | O que demonstrar ou explicar |
+| --- | --- | --- |
+| Problema e solução | [Descrição do problema](#problema-e-solução) e captura da tela inicial acima | A falta de tempo, equipamento ou orientação dificulta uma rotina ativa; o Actus adapta treinos ao contexto da pessoa. |
+| Cadastro, login e sessão | Capturas de entrada acima; `src/app/login.js` e `src/context/AuthContext.js` | Alternar entre login e cadastro, entrar com uma conta de demonstração e sair. As imagens não usam credenciais reais. |
+| JWT, token e controle de acesso | `src/context/AuthContext.js` e [`firestore.rules`](firestore.rules) | Firebase Authentication emite um token de identidade JWT; o SDK Firebase o envia ao Firestore. As regras verificam a identidade e as permissões no servidor. Não há API Express nem middleware JWT próprio nesta implementação autorizada pelo orientador. |
+| Níveis de usuário | `src/context/AuthContext.js`, `src/app/admin.js` e `scripts/set-admin-claim.js` | Demonstrar conta comum, perfil profissional pendente/verificado e conta administradora. A administração usa o custom claim `admin: true`; aprovação profissional é uma permissão separada. |
+| CRUD | Captura do montador acima; `src/app/treino.js`, `src/app/rotina.js`, `src/app/sessao.js`, `src/app/historico.js` e `src/app/admin.js` | Criar e consultar um treino, atualizar o progresso durante a sessão e removê-lo do histórico; no painel administrativo, criar, editar, listar e excluir exercícios. |
+| Banco de dados | Tabela [Dados e operações](#dados-e-operações) e coleções no Cloud Firestore | Mostrar no Firebase Console as coleções `users`, `exercises`, `professionals` e `conversations`, usando uma conta de demonstração e sem expor credenciais. |
+| Repositório e histórico | [Repositório Actus](https://github.com/AugustoKrst/Actus) · [histórico de commits](https://github.com/AugustoKrst/Actus/commits/main) | Mostrar a versão publicada, os commits da evolução e o README. Faça push da versão final antes de entregar. |
+| APK final | [Baixar Actus.apk](https://expo.dev/artifacts/eas/9W4m2YJKBLYHnNBD_ES0kNxAV-cbqK8QWKUd2cVrp1A.apk) · [build na Expo](https://expo.dev/accounts/attoatt/projects/Actus/builds/7b819686-fd3c-485d-aaa1-1cdfecbfcec6) | Instalar o APK em Android compatível e demonstrar os fluxos principais. O build foi feito a partir do commit `13cf93ba073bc12a93de09b8196960bd0bd42e5d`. |
+
+As capturas são ilustrativas da interface e não contêm dados pessoais. Use contas de demonstração nas partes que precisam de Firebase; não mostre senhas, tokens ou chaves durante a apresentação.
 
 ## Configuração local
 

@@ -27,6 +27,13 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a1ba5bfc-6325-4ac8-9467-18b135b4643e"
+      }
+    },
+    "owner": "attoatt"
   }
 }
