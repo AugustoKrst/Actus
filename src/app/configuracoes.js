@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { AppText as Text, Card, PageHeading, SectionTitle } from '../components/ui';
 import { router } from 'expo-router';
 import AppShell from '../components/AppShell';
-import { Card, PageHeading, SectionTitle } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 
 export default function SettingsScreen() {

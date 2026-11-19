@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Card, Chip, SectionTitle } from './ui';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { AppText as Text, AppTextInput as TextInput, Card, Chip, SectionTitle } from './ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { deleteMyAccount } from '../lib/account';
@@ -90,6 +90,6 @@ function ProfileEditorForm({ session, updateUser }) {
 function createStyles(colors) { return StyleSheet.create({
   card: { maxWidth: 690, padding: 24 }, label: { color: colors.subtle, fontSize: 9, letterSpacing: 1.1, fontWeight: '800', marginTop: 23, marginBottom: 9 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.line, borderRadius: 9, paddingHorizontal: 13, color: colors.ink, fontSize: 13, backgroundColor: colors.field, justifyContent: 'center' }, readonly: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, readonlyText: { color: colors.ink, fontSize: 13 }, verified: { color: colors.green, fontSize: 10, fontWeight: '700' }, pending: { color: colors.orange, fontSize: 10, fontWeight: '700' }, helper: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 8 }, wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  button: { minHeight: 48, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green, marginTop: 25 }, buttonDisabled: { opacity: 0.55 }, buttonText: { color: 'white', fontSize: 12, fontWeight: '700' }, success: { color: colors.green, fontSize: 12, marginTop: 14 }, error: { color: colors.red, fontSize: 12, marginTop: 14 },
-  dangerZone: { borderTopWidth: 1, borderColor: colors.line, paddingTop: 20, marginTop: 27 }, dangerTitle: { color: colors.red, fontSize: 14, fontWeight: '800' }, deleteButton: { minHeight: 48, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.red }, deleteButtonText: { color: 'white', fontSize: 11, fontWeight: '800' }, deleteActions: { flexDirection: 'row', gap: 9, marginTop: 10 }, cancelButton: { minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.pale }, cancelText: { color: colors.green, fontSize: 11, fontWeight: '800' },
+  button: { minHeight: 48, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green, marginTop: 25 }, buttonDisabled: { opacity: 0.55 }, buttonText: { color: colors.textOnPrimary, fontSize: 12, fontWeight: '700' }, success: { color: colors.green, fontSize: 12, marginTop: 14 }, error: { color: colors.red, fontSize: 12, marginTop: 14 },
+  dangerZone: { borderTopWidth: 1, borderColor: colors.line, paddingTop: 20, marginTop: 27 }, dangerTitle: { color: colors.red, fontSize: 14, fontWeight: '800' }, deleteButton: { minHeight: 48, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.red }, deleteButtonText: { color: colors.textOnPrimary, fontSize: 11, fontWeight: '800' }, deleteActions: { flexDirection: 'row', gap: 9, marginTop: 10 }, cancelButton: { minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.pale }, cancelText: { color: colors.green, fontSize: 11, fontWeight: '800' },
 }); }

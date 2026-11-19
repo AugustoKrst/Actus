@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { AppText as Text, Button, Card, ConfirmDialog, PageHeading, ProgressBar } from '../components/ui';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useNavigation, usePreventRemove } from 'expo-router/react-navigation';
 import AppShell from '../components/AppShell';
-import { Button, Card, ConfirmDialog, PageHeading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getCompletedSetIds, getExerciseSetCount, getSavedWorkout, getWorkoutSetIds, saveWorkoutProgress } from '../lib/exercises';
@@ -58,6 +60,13 @@ export default function WorkoutSessionScreen() {
     try {
       await saveWorkoutProgress(session.user.uid, workout.id, next, workout.exercises);
       setCompletedSetIds(next);
+      if (!completedSetIds.includes(setId)) {
+        const exercise = workout.exercises.find((item) => setId.startsWith(`${item.id}-set-`));
+        const exerciseSets = getExerciseSetCount(exercise);
+        const completedExerciseSets = next.filter((item) => item.startsWith(`${exercise.id}-set-`)).length;
+        if (completedExerciseSets === exerciseSets) Haptics.selectionAsync().catch(() => {});
+        if (next.length === totalSets) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      }
     } catch (saveError) {
       setError(sessionErrorMessage(saveError, 'salvar'));
     } finally {
@@ -75,8 +84,7 @@ export default function WorkoutSessionScreen() {
     <PageHeading eyebrow="SEU MOMENTO DE MOVIMENTO" title={allDone ? 'Treino concluído!' : 'Vamos começar'} description={workout ? `${workout.title} · ${workout.duration} min` : 'Seu treino fica salvo enquanto você faz cada série.'} />
     {loading ? <View style={s.loading}><ActivityIndicator color={colors.green} /><Text style={s.muted}>Carregando seu treino...</Text></View> : error && !workout ? <Card style={s.errorCard}><Text style={s.error}>{error}</Text><Pressable onPress={() => router.replace('/treino')} style={s.secondary}><Text style={s.secondaryText}>Voltar aos treinos</Text></Pressable></Card> : workout ? <>
       <Card style={s.progressCard}>
-        <View style={s.progressHeading}><Text style={s.progressLabel}>SEU PROGRESSO</Text><Text style={s.progressCount}>{completedSetIds.length} de {totalSets} séries</Text></View>
-        <View style={s.track}><View style={[s.fill, { width: `${totalSets ? Math.round(completedSetIds.length / totalSets * 100) : 0}%` }]} /></View>
+        <ProgressBar progress={totalSets ? completedSetIds.length / totalSets : 0} label="Seu progresso" valueLabel={`${completedSetIds.length} de ${totalSets} séries`} />
         {allDone ? <Text style={s.success}>Mandou bem! Você marcou todas as séries.</Text> : <Text style={s.hint}>Marque cada série assim que terminar.</Text>}
       </Card>
 
@@ -99,7 +107,7 @@ export default function WorkoutSessionScreen() {
                 accessibilityState={{ checked }}
                 style={[s.setButton, checked && s.setButtonDone, saving && s.setButtonSaving]}
               >
-                <View style={[s.checkCircle, checked && s.checkCircleDone]}><Text style={[s.checkMark, checked && s.checkMarkDone]}>{checked ? '✓' : ''}</Text></View>
+                <View style={[s.checkCircle, checked && s.checkCircleDone]}>{checked ? <Feather name="check" size={14} color={colors.textOnPrimary} accessibilityElementsHidden importantForAccessibility="no" /> : null}</View>
                 <Text style={[s.setText, checked && s.setTextDone]}>Série {setIndex + 1}</Text>
               </Pressable>;
             })}</View>
@@ -136,8 +144,8 @@ function sessionErrorMessage(error, action) {
 
 function createStyles(colors) { return StyleSheet.create({
   page: { width: '100%', maxWidth: 920 }, loading: { minHeight: 220, justifyContent: 'center', alignItems: 'center', gap: 12 }, muted: { color: colors.muted, fontSize: 12 },
-  progressCard: { padding: 20 }, progressHeading: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, alignItems: 'center' }, progressLabel: { color: colors.green, fontSize: 10, fontWeight: '800', letterSpacing: 1 }, progressCount: { color: colors.ink, fontSize: 12, fontWeight: '700' }, track: { height: 8, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.pale, marginTop: 14 }, fill: { height: 8, borderRadius: 8, backgroundColor: colors.green }, hint: { color: colors.muted, fontSize: 11, marginTop: 11 }, success: { color: colors.green, fontSize: 12, fontWeight: '700', marginTop: 11 },
-  list: { gap: 10, marginTop: 15 }, exercise: { padding: 16 }, exerciseContent: { flex: 1 }, exerciseName: { color: colors.ink, fontSize: 13, fontWeight: '700' }, exerciseMeta: { color: colors.muted, fontSize: 10, marginTop: 5 }, instructions: { color: colors.subtle, fontSize: 10, lineHeight: 15, marginTop: 5 }, setList: { gap: 8, marginTop: 13 }, setButton: { minHeight: 46, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }, setButtonDone: { backgroundColor: colors.pale, borderColor: colors.green }, setButtonSaving: { opacity: 0.75 }, checkCircle: { width: 23, height: 23, borderRadius: 12, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' }, checkCircleDone: { backgroundColor: colors.green, borderColor: colors.green }, checkMark: { color: 'transparent', fontSize: 14, fontWeight: '800' }, checkMarkDone: { color: 'white' }, setText: { color: colors.ink, fontSize: 12, fontWeight: '600' }, setTextDone: { color: colors.green },
-  exitButton: { alignSelf: 'flex-start', marginTop: 10 }, finish: { minHeight: 49, borderRadius: 10, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginTop: 17, paddingHorizontal: 14 }, finishDisabled: { backgroundColor: colors.pale }, finishText: { color: 'white', fontWeight: '700', fontSize: 12, textAlign: 'center' }, finishTextDisabled: { color: colors.muted },
+  progressCard: { padding: 20 }, hint: { color: colors.muted, fontSize: 11, marginTop: 11 }, success: { color: colors.green, fontSize: 12, fontWeight: '700', marginTop: 11 },
+  list: { gap: 10, marginTop: 15 }, exercise: { padding: 16 }, exerciseContent: { flex: 1 }, exerciseName: { color: colors.ink, fontSize: 13, fontWeight: '700' }, exerciseMeta: { color: colors.muted, fontSize: 10, marginTop: 5 }, instructions: { color: colors.subtle, fontSize: 10, lineHeight: 15, marginTop: 5 }, setList: { gap: 8, marginTop: 13 }, setButton: { minHeight: 48, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }, setButtonDone: { backgroundColor: colors.pale, borderColor: colors.green }, setButtonSaving: { opacity: 0.75 }, checkCircle: { width: 23, height: 23, borderRadius: 12, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' }, checkCircleDone: { backgroundColor: colors.green, borderColor: colors.green }, setText: { color: colors.ink, fontSize: 12, fontWeight: '600' }, setTextDone: { color: colors.green },
+  exitButton: { alignSelf: 'flex-start', marginTop: 10 }, finish: { minHeight: 49, borderRadius: 10, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginTop: 17, paddingHorizontal: 14 }, finishDisabled: { backgroundColor: colors.pale }, finishText: { color: colors.textOnPrimary, fontWeight: '700', fontSize: 12, textAlign: 'center' }, finishTextDisabled: { color: colors.muted },
   errorCard: { padding: 20 }, error: { color: colors.red, fontSize: 12, marginTop: 10 }, secondary: { minHeight: 42, justifyContent: 'center', alignItems: 'center', marginTop: 14, borderRadius: 9, backgroundColor: colors.pale }, secondaryText: { color: colors.green, fontSize: 12, fontWeight: '700' },
 }); }

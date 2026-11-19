@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { AppText as Text, AppTextInput as TextInput, Card, ConfirmDialog, PageHeading } from '../components/ui';
 import { router, useFocusEffect } from 'expo-router';
 import AppShell from '../components/AppShell';
-import { Card, ConfirmDialog, PageHeading } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { deleteExercise, listExercises, listProfessionalsByVerification, listRegisteredUsers, saveExercise, setProfessionalVerification } from '../lib/exercises';
@@ -171,7 +171,7 @@ export default function AdminScreen() {
       {professionalsLoading && pendingProfessionals.length === 0
         ? <View style={s.loading}><ActivityIndicator color={colors.green} /><Text style={s.muted}>Carregando profissionais...</Text></View>
         : pendingProfessionals.length === 0
-          ? <Text style={s.empty}>{!professionalsError && 'Não há profissionais aguardando aprovação.'}</Text>
+          ? professionalsError ? null : <Text style={s.empty}>Não há profissionais aguardando aprovação.</Text>
           : pendingProfessionals.map((professional) => <View key={professional.id} style={s.professionalRow}>
             <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View>
             <Pressable onPress={() => changeProfessionalVerification(professional, true)} disabled={updatingProfessionalId === professional.id} style={s.approveButton} accessibilityRole="button" accessibilityLabel={`Aprovar ${professional.name}`}><Text style={s.approveText}>{updatingProfessionalId === professional.id ? 'Salvando...' : 'Aprovar'}</Text></Pressable>
@@ -239,8 +239,8 @@ export default function AdminScreen() {
 function createStyles(colors) { return StyleSheet.create({
   page: { width: '100%', maxWidth: 900 }, card: { width: '100%', padding: 20, marginBottom: 16 }, sectionTitle: { color: colors.ink, fontSize: 16, fontWeight: '800', marginBottom: 12 },
   input: { minHeight: 44, borderWidth: 1, borderColor: colors.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9, color: colors.ink, marginBottom: 9 }, multiline: { minHeight: 80, textAlignVertical: 'top' },
-  primaryButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.green, marginTop: 4, paddingHorizontal: 14 }, primaryText: { color: 'white', fontSize: 11, fontWeight: '700' }, cancelButton: { padding: 12, alignItems: 'center' }, cancelText: { color: colors.green, fontSize: 11, fontWeight: '700' },
+  primaryButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.green, marginTop: 4, paddingHorizontal: 14 }, primaryText: { color: colors.textOnPrimary, fontSize: 11, fontWeight: '700' }, cancelButton: { padding: 12, alignItems: 'center' }, cancelText: { color: colors.green, fontSize: 11, fontWeight: '700' },
   exerciseRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 9, borderTopWidth: 1, borderColor: colors.line, paddingVertical: 8 }, rowCopy: { flex: 1 }, rowTitle: { color: colors.ink, fontSize: 12, fontWeight: '700' }, smallButton: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 8, backgroundColor: colors.green }, deleteButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 5 }, deleteText: { color: colors.red, fontSize: 10, fontWeight: '700' },
-  professionalRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderColor: colors.line, paddingVertical: 10 }, approveButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 9, justifyContent: 'center', backgroundColor: colors.green }, approveText: { color: 'white', fontSize: 11, fontWeight: '800' }, revokeButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 9, justifyContent: 'center', backgroundColor: colors.soft }, revokeText: { color: colors.red, fontSize: 11, fontWeight: '800' },
+  professionalRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderColor: colors.line, paddingVertical: 10 }, approveButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 9, justifyContent: 'center', backgroundColor: colors.green }, approveText: { color: colors.textOnPrimary, fontSize: 11, fontWeight: '800' }, revokeButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 9, justifyContent: 'center', backgroundColor: colors.soft }, revokeText: { color: colors.red, fontSize: 11, fontWeight: '800' },
   accountRow: { borderTopWidth: 1, borderColor: colors.line, paddingVertical: 12, gap: 4 }, accountEmail: { color: colors.green, fontSize: 11 }, muted: { color: colors.muted, fontSize: 10, marginTop: 3 }, error: { color: colors.red, fontSize: 11, marginTop: 8 }, empty: { color: colors.muted, fontSize: 11, marginTop: 14 }, loading: { minHeight: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }, moreButton: { minHeight: 44, borderRadius: 9, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
 }); }

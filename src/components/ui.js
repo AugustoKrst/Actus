@@ -1,10 +1,15 @@
-import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { forwardRef, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput as NativeTextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import AppText from './AppText';
 
 export { AppText };
+
+export const AppTextInput = forwardRef(function AppTextInput({ style, ...props }, ref) {
+  const { tokens } = useTheme();
+  return <NativeTextInput ref={ref} {...props} style={[{ fontFamily: tokens.type.family.regular }, style]} />;
+});
 
 export function Header({ eyebrow, title, description, action }) {
   const { colors, tokens } = useTheme();
@@ -82,7 +87,7 @@ export function Input({
     {label ? <AppText style={s.inputLabel}>{label}</AppText> : null}
     <View style={[s.inputFrame, focused && s.inputFrameFocused, error && s.inputFrameError]}>
       {icon ? <View style={s.inputIcon}>{icon}</View> : null}
-      <TextInput
+      <NativeTextInput
         value={value}
         onChangeText={onChangeText}
         onFocus={(event) => { setFocused(true); onFocus?.(event); }}
@@ -242,7 +247,7 @@ function styles(colors, tokens) {
     buttonText: { color: colors.textOnPrimary, fontSize: type.size.caption, fontWeight: type.weight.bold, textAlign: 'center' }, buttonText_primary: { color: colors.textOnPrimary }, buttonText_secondary: { color: colors.primary }, buttonText_ghost: { color: colors.primary }, buttonText_danger: { color: colors.textOnPrimary }, buttonText_small: { fontSize: type.size.label }, buttonText_medium: { fontSize: type.size.caption }, buttonText_large: { fontSize: type.size.body },
     inputGroup: { gap: space.xxs }, inputLabel: { color: colors.textSecondary, fontSize: type.size.label, fontWeight: type.weight.bold, letterSpacing: 0.7 },
     inputFrame: { minHeight: metrics.touchTarget, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.field, borderRadius: radius.sm, flexDirection: 'row', alignItems: 'center' }, inputFrameFocused: { borderColor: colors.primary, borderWidth: 2 }, inputFrameError: { borderColor: colors.danger },
-    input: { flex: 1, minWidth: 0, minHeight: metrics.touchTarget - 2, paddingHorizontal: space.sm, color: colors.textPrimary, fontSize: type.size.caption }, inputWithIcon: { paddingLeft: 0 }, inputWithTrailingIcon: { paddingRight: 0 }, inputIcon: { width: 44, alignItems: 'center', justifyContent: 'center' }, passwordToggle: { width: metrics.touchTarget, minHeight: metrics.touchTarget, alignItems: 'center', justifyContent: 'center' }, inputErrorText: { color: colors.danger, fontSize: type.size.label }, inputHelper: { color: colors.textSecondary, fontSize: type.size.label },
+    input: { flex: 1, minWidth: 0, minHeight: metrics.touchTarget - 2, paddingHorizontal: space.sm, color: colors.textPrimary, fontSize: type.size.caption, fontFamily: type.family.regular }, inputWithIcon: { paddingLeft: 0 }, inputWithTrailingIcon: { paddingRight: 0 }, inputIcon: { width: 44, alignItems: 'center', justifyContent: 'center' }, passwordToggle: { width: metrics.touchTarget, minHeight: metrics.touchTarget, alignItems: 'center', justifyContent: 'center' }, inputErrorText: { color: colors.danger, fontSize: type.size.label }, inputHelper: { color: colors.textSecondary, fontSize: type.size.label },
     chip: { minHeight: metrics.touchTarget, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: space.xs, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: space.xxs }, chipSelected: { backgroundColor: colors.surfaceAlt, borderColor: colors.primary }, chipText: { color: colors.textSecondary, fontSize: type.size.caption, fontWeight: type.weight.medium }, chipTextSelected: { color: colors.primary, fontWeight: type.weight.bold },
     tag: { minHeight: 28, paddingHorizontal: space.xs, borderRadius: radius.pill, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: space.xxs, backgroundColor: colors.surfaceAlt }, tag_success: { backgroundColor: colors.surfaceAlt }, tag_warning: { backgroundColor: colors.surfaceAlt }, tag_danger: { backgroundColor: colors.surfaceAlt }, tagText: { color: colors.textSecondary, fontSize: type.size.label, fontWeight: type.weight.semibold }, tagText_success: { color: colors.success }, tagText_warning: { color: colors.warning }, tagText_danger: { color: colors.danger },
     card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: metrics.cardBorder, borderRadius: radius.lg, padding: space.lg, shadowColor: metrics.shadow.color, shadowOpacity: metrics.shadow.opacity, shadowRadius: metrics.shadow.radius, shadowOffset: metrics.shadow.offset, elevation: metrics.shadow.elevation },

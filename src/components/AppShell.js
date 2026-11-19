@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { router, usePathname } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppText as Text, Avatar, ConfirmDialog } from './ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { ConfirmDialog } from './ui';
 
 const primaryLinks = [
   { path: '/inicio', label: 'Início', icon: 'home' },
@@ -19,13 +19,12 @@ export default function AppShell({ children, scrollable = true }) {
   const wide = width > 760;
   const path = usePathname();
   const { session, logout } = useAuth();
-  const { colors } = useTheme();
-  const s = createStyles(colors);
+  const { colors, tokens } = useTheme();
+  const s = createStyles(colors, tokens);
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [logoutError, setLogoutError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
-  const initial = (session?.user?.name || 'A').slice(0, 1).toUpperCase();
   const navigationLinks = [
     ...primaryLinks,
     ...(session?.user?.role === 'health_professional'
@@ -81,11 +80,11 @@ export default function AppShell({ children, scrollable = true }) {
           })}
         </ScrollView> : <View style={s.navSpacer} />}
         <Pressable onPress={() => setMenuOpen((open) => !open)} style={s.menuButton} accessibilityRole="button" accessibilityLabel={menuOpen ? 'Fechar menu' : 'Abrir menu'} accessibilityState={{ expanded: menuOpen }}>
-          <View style={s.menuLines}><View style={s.menuLine} /><View style={s.menuLine} /><View style={s.menuLine} /></View>
+          <Feather name={menuOpen ? 'x' : 'menu'} size={19} color={colors.textPrimary} accessibilityElementsHidden importantForAccessibility="no" />
         </Pressable>
         {menuOpen && <View style={s.menuPanel}>
           <View style={s.menuAccount}>
-            <View style={s.avatar}><Text style={s.avatarText}>{initial}</Text></View>
+            <Avatar name={session?.user?.name || ''} size="small" />
             <View style={s.accountCopy}><Text style={s.accountName}>{session?.user?.name || 'Minha conta'}</Text><Text style={s.accountEmail}>{session?.user?.email || 'Perfil pessoal'}</Text></View>
           </View>
           <View style={s.menuDivider} />
@@ -119,15 +118,15 @@ export default function AppShell({ children, scrollable = true }) {
   </View><ConfirmDialog visible={logoutConfirmOpen} title="Sair da conta?" message={logoutError || 'Você poderá entrar novamente com seu e-mail e senha.'} confirmLabel="Sair" onConfirm={confirmSignOut} onCancel={() => { if (!loggingOut) setLogoutConfirmOpen(false); }} destructive loading={loggingOut} /></SafeAreaView>;
 }
 
-function createStyles(colors) { return StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.canvas }, frame: { flex: 1, backgroundColor: colors.canvas }, main: { flex: 1, position: 'relative' }, menuBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 8 },
-  topbar: { minHeight: 72, position: 'relative', backgroundColor: colors.white, borderBottomWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 28, zIndex: 10, elevation: 3, shadowColor: '#16372A', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 } }, topbarCompact: { minHeight: 64, paddingHorizontal: 11 },
-  brand: { width: 112, flexDirection: 'row', alignItems: 'center', gap: 9 }, brandMarkWrap: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }, brandMark: { color: colors.green, fontSize: 19 }, brandText: { color: colors.ink, fontWeight: '800', fontSize: 21, letterSpacing: -0.8 },
+function createStyles(colors, tokens) { const { space, radius, type, metrics } = tokens; return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background }, frame: { flex: 1, backgroundColor: colors.background }, main: { flex: 1, position: 'relative' }, menuBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 8 },
+  topbar: { minHeight: 72, position: 'relative', backgroundColor: colors.surface, borderBottomWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.xl, zIndex: 10, elevation: 2, shadowColor: metrics.shadow.color, shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 } }, topbarCompact: { minHeight: 64, paddingHorizontal: space.sm },
+  brand: { width: 112, flexDirection: 'row', alignItems: 'center', gap: space.xs }, brandMarkWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }, brandMark: { color: colors.primary, fontSize: type.size.subtitle }, brandText: { color: colors.textPrimary, fontWeight: type.weight.bold, fontSize: 21, letterSpacing: -0.8 },
   navSpacer: { flex: 1, minWidth: 0 },
-  navScroll: { flex: 1, minWidth: 0 }, navContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 7 }, navItem: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 10 }, navItemActive: { backgroundColor: colors.pale }, navIcon: { color: colors.muted, fontSize: 14 }, navText: { color: colors.muted, fontSize: 11, fontWeight: '700' }, navTextActive: { color: colors.green, fontWeight: '800' },
-  menuButton: { width: 42, height: 42, flexShrink: 0, marginLeft: 8, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.soft }, menuLines: { gap: 4 }, menuLine: { width: 18, height: 2, borderRadius: 2, backgroundColor: colors.dark },
-  menuPanel: { position: 'absolute', top: 61, right: 12, width: 260, padding: 10, borderRadius: 15, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, elevation: 8, zIndex: 30, shadowColor: '#18352B', shadowOpacity: 0.14, shadowRadius: 16, shadowOffset: { width: 0, height: 7 } },
-  menuAccount: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 9 }, avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }, avatarText: { color: colors.green, fontWeight: '800', fontSize: 14 }, accountCopy: { flex: 1 }, accountName: { color: colors.ink, fontSize: 12, fontWeight: '700' }, accountEmail: { color: colors.muted, fontSize: 10, marginTop: 3 },
-  menuDivider: { height: 1, backgroundColor: colors.line, marginVertical: 6 }, menuItem: { minHeight: 44, borderRadius: 9, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 11 }, menuItemActive: { backgroundColor: colors.pale }, menuItemIcon: { color: colors.muted, width: 20, fontSize: 16, textAlign: 'center' }, menuItemIconActive: { color: colors.green }, menuItemText: { color: colors.ink, fontSize: 12, fontWeight: '600' }, menuItemTextActive: { color: colors.green, fontWeight: '800' },
-  content: { width: '100%', minWidth: 0, flexGrow: 1, paddingTop: 30, alignItems: 'center' }, contentFixed: { width: '100%', minWidth: 0, flex: 1, paddingBottom: 18, alignItems: 'stretch' },
+  navScroll: { flex: 1, minWidth: 0 }, navContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: space.xxs, paddingHorizontal: space.xs }, navItem: { minHeight: metrics.touchTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xxs, paddingHorizontal: space.sm, borderRadius: radius.sm }, navItemActive: { backgroundColor: colors.surfaceAlt }, navIcon: { color: colors.textSecondary, fontSize: 14 }, navText: { color: colors.textSecondary, fontSize: type.size.label, fontWeight: type.weight.semibold }, navTextActive: { color: colors.primary, fontWeight: type.weight.bold },
+  menuButton: { width: metrics.touchTarget, height: metrics.touchTarget, flexShrink: 0, marginLeft: space.xs, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt },
+  menuPanel: { position: 'absolute', top: 61, right: 12, width: 280, maxWidth: '92%', padding: space.xs, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, elevation: 8, zIndex: 30, shadowColor: metrics.shadow.color, shadowOpacity: 0.14, shadowRadius: 16, shadowOffset: { width: 0, height: 7 } },
+  menuAccount: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.xs }, accountCopy: { flex: 1, minWidth: 0 }, accountName: { color: colors.textPrimary, fontSize: type.size.caption, fontWeight: type.weight.bold }, accountEmail: { color: colors.textSecondary, fontSize: type.size.label, marginTop: space.xxs },
+  menuDivider: { height: 1, backgroundColor: colors.border, marginVertical: space.xxs }, menuItem: { minHeight: metrics.touchTarget, borderRadius: radius.sm, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.sm }, menuItemActive: { backgroundColor: colors.surfaceAlt }, menuItemIcon: { color: colors.textSecondary, width: 20, fontSize: 16, textAlign: 'center' }, menuItemIconActive: { color: colors.primary }, menuItemText: { color: colors.textPrimary, fontSize: type.size.caption, fontWeight: type.weight.medium }, menuItemTextActive: { color: colors.primary, fontWeight: type.weight.bold },
+  content: { width: '100%', minWidth: 0, flexGrow: 1, paddingTop: space.xl, alignItems: 'center' }, contentFixed: { width: '100%', minWidth: 0, flex: 1, paddingBottom: space.md, alignItems: 'stretch' },
 }); }

@@ -15,6 +15,8 @@ const lightSemantic = {
   field: '#FBFCFB',
   heroStart: '#143E30',
   heroEnd: '#236548',
+  heroText: '#FFFFFF',
+  heroMuted: '#D2E3D8',
   avatarPalette: ['#DDEBE0', '#E1EAF0', '#F1E5D6', '#E8E1EF', '#D8ECE8'],
   statusBarStyle: 'dark',
 };
@@ -36,6 +38,8 @@ const darkSemantic = {
   field: '#1D3026',
   heroStart: '#14271E',
   heroEnd: '#1C3D2C',
+  heroText: '#FFFFFF',
+  heroMuted: '#D2E3D8',
   avatarPalette: ['#294537', '#2D4050', '#4B3C2B', '#40364D', '#254A45'],
   statusBarStyle: 'light',
 };
