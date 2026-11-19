@@ -329,7 +329,10 @@ service cloud.firestore {
     }
 
     match /conversations/{conversationId} {
-      allow read: if conversationParticipant(conversationId);
+      allow read: if request.auth != null
+        && (resource.data.studentId == request.auth.uid
+          || (resource.data.professionalId == request.auth.uid
+            && verifiedProfessional(resource.data.professionalId)));
       allow create: if request.auth != null
         && request.resource.data.keys().hasOnly(['studentId', 'studentName', 'professionalId', 'professionalName', 'createdAt'])
         && request.resource.data.studentId == request.auth.uid
