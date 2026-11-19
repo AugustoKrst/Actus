@@ -5,17 +5,23 @@ import { Card, PageHeading, SectionTitle } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 
 export default function SettingsScreen() {
-  const { colors, mode, toggleMode } = useTheme();
+  const { colors, mode, setMode } = useTheme();
   const s = createStyles(colors);
+  const modeLabel = mode === 'system' ? 'do sistema' : mode === 'light' ? 'claro' : 'escuro';
   return <AppShell><View style={s.page}>
     <PageHeading eyebrow="PREFERÊNCIAS" title="Configurações" description="Ajuste a aparência do Actus para ficar confortável no seu dia a dia." />
     <Card style={s.card}>
       <SectionTitle title="Aparência" caption="Tema do aplicativo" />
-      <View style={s.themeRow}>
-        <View style={s.themeCopy}><Text style={s.themeTitle}>Modo {mode === 'light' ? 'claro' : 'escuro'}</Text><Text style={s.themeDescription}>Sua escolha fica salva neste dispositivo.</Text></View>
-        <Pressable onPress={toggleMode} style={s.themeButton} accessibilityRole="button" accessibilityLabel={`Ativar modo ${mode === 'light' ? 'escuro' : 'claro'}`}>
-          <Text style={s.themeButtonText}>{mode === 'light' ? 'Escuro' : 'Claro'}</Text>
-        </Pressable>
+      <Text style={s.themeTitle}>Modo {modeLabel}</Text>
+      <Text style={s.themeDescription}>Sua escolha fica salva neste dispositivo.</Text>
+      <View style={s.modeOptions}>
+        {[
+          ['light', 'Claro'],
+          ['dark', 'Escuro'],
+          ['system', 'Sistema'],
+        ].map(([value, label]) => <Pressable key={value} onPress={() => setMode(value)} style={[s.modeOption, mode === value && s.modeOptionSelected]} accessibilityRole="button" accessibilityState={{ selected: mode === value }}>
+          <Text style={[s.themeButtonText, mode === value && s.themeButtonTextSelected]}>{label}</Text>
+        </Pressable>)}
       </View>
     </Card>
     <Card style={s.card}>
@@ -27,6 +33,9 @@ export default function SettingsScreen() {
 
 function createStyles(colors) { return StyleSheet.create({
   page: { width: '100%', maxWidth: 1120 }, card: { width: '100%', maxWidth: 690, padding: 24 },
-  themeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, paddingTop: 8 }, themeCopy: { flex: 1, minWidth: 200 }, themeTitle: { color: colors.ink, fontSize: 14, fontWeight: '700' }, themeDescription: { color: colors.muted, fontSize: 11, marginTop: 5 },
-  themeButton: { minHeight: 42, minWidth: 90, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.pale }, themeButtonText: { color: colors.green, fontSize: 12, fontWeight: '700' },
+  themeTitle: { color: colors.ink, fontSize: 14, fontWeight: '700' }, themeDescription: { color: colors.muted, fontSize: 11, marginTop: 5 },
+  modeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
+  modeOption: { minHeight: 48, minWidth: 88, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.field },
+  modeOptionSelected: { borderColor: colors.green, backgroundColor: colors.pale },
+  themeButtonText: { color: colors.muted, fontSize: 12, fontWeight: '700' }, themeButtonTextSelected: { color: colors.green },
 }); }
