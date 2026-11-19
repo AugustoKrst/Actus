@@ -172,7 +172,7 @@ export default function AdminScreen() {
       {professionalsLoading && pendingProfessionals.length === 0
         ? <View style={s.loading}><ActivityIndicator color={colors.green} /><Text style={s.muted}>Carregando profissionais...</Text></View>
         : pendingProfessionals.length === 0
-          ? professionalsError ? null : <Text style={s.empty}>Não há profissionais aguardando aprovação.</Text>
+          ? (professionalsError ? null : <Text style={s.empty}>Não há profissionais aguardando aprovação.</Text>)
           : pendingProfessionals.map((professional) => <View key={professional.id} style={s.professionalRow}>
             <View style={s.rowCopy}><Text style={s.rowTitle}>{professional.name || 'Profissional sem nome'}</Text><Text style={s.muted}>Registro: {professional.registrationNumber || 'Não informado'}</Text></View>
             <Pressable onPress={() => changeProfessionalVerification(professional, true)} disabled={updatingProfessionalId === professional.id} style={s.approveButton} accessibilityRole="button" accessibilityLabel={`Aprovar ${professional.name}`}><Text style={s.approveText}>{updatingProfessionalId === professional.id ? 'Salvando...' : 'Aprovar'}</Text></Pressable>
